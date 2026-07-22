@@ -118,15 +118,15 @@ function extractMainContent(spId, html) {
 // 2. Pre-extract all 10 Subpage HTML Templates directly from source HTML files
 const subpages = [
     { id: 'overview', file: 'REPORT.html' },
-    { id: 'panels', file: 'https://av-line.github.io/SWOOD_AVL/Report_Test/_SOURCE/HTML/panels.html' },
-    { id: 'cabinets', file: 'https://av-line.github.io/SWOOD_AVL/Report_Test/_SOURCE/HTML/cabinets.html' },
-    { id: 'bigparts', file: 'https://av-line.github.io/SWOOD_AVL/Report_Test/_SOURCE/HTML/bigparts.html' },
-    { id: 'laminates', file: 'https://av-line.github.io/SWOOD_AVL/Report_Test/_SOURCE/HTML/laminates.html' },
-    { id: 'cutting', file: 'https://av-line.github.io/SWOOD_AVL/Report_Test/_SOURCE/HTML/cutting.html' },
-    { id: 'programs', file: 'https://av-line.github.io/SWOOD_AVL/Report_Test/_SOURCE/HTML/programs.html' },
-    { id: 'fittings', file: 'https://av-line.github.io/SWOOD_AVL/Report_Test/_SOURCE/HTML/fittings.html' },
-    { id: 'purchase', file: 'https://av-line.github.io/SWOOD_AVL/Report_Test/_SOURCE/HTML/purchase.html' },
-    { id: 'summary', file: 'https://av-line.github.io/SWOOD_AVL/Report_Test/_SOURCE/HTML/summary.html' }
+    { id: 'panels', file: 'https://av-line.github.io/SWOOD_AVL/Report_Test/HTML/panels.html' },
+    { id: 'cabinets', file: 'https://av-line.github.io/SWOOD_AVL/Report_Test/HTML/cabinets.html' },
+    { id: 'bigparts', file: 'https://av-line.github.io/SWOOD_AVL/Report_Test/HTML/bigparts.html' },
+    { id: 'laminates', file: 'https://av-line.github.io/SWOOD_AVL/Report_Test/HTML/laminates.html' },
+    { id: 'cutting', file: 'https://av-line.github.io/SWOOD_AVL/Report_Test/HTML/cutting.html' },
+    { id: 'programs', file: 'https://av-line.github.io/SWOOD_AVL/Report_Test/HTML/programs.html' },
+    { id: 'fittings', file: 'https://av-line.github.io/SWOOD_AVL/Report_Test/HTML/fittings.html' },
+    { id: 'purchase', file: 'https://av-line.github.io/SWOOD_AVL/Report_Test/HTML/purchase.html' },
+    { id: 'summary', file: 'https://av-line.github.io/SWOOD_AVL/Report_Test/HTML/summary.html' }
 ];
 
 const subpageTemplates = {};
@@ -739,13 +739,13 @@ body { min-height: 100vh; background: var(--color-bg-primary); }
   <link href="https://unpkg.com/tabulator-tables@6.2.1/dist/css/tabulator.min.css" rel="stylesheet" />
 
   <!-- Relative CSS Fallback Links -->
-  <link rel="stylesheet" href="https://av-line.github.io/SWOOD_AVL/Report_Test/_SOURCE/CSS/avl-report_colors.css" />
-  <link rel="stylesheet" href="https://av-line.github.io/SWOOD_AVL/Report_Test/_SOURCE/CSS/avl-report_style.css" />
-  <link rel="stylesheet" href="https://av-line.github.io/SWOOD_AVL/Report_Test/_SOURCE/CSS/avl-report_dashboard.css" />
-  <link rel="stylesheet" href="https://av-line.github.io/SWOOD_AVL/Report_Test/_SOURCE/CSS/avl-report_pdf-print.css" />
+  <link rel="stylesheet" href="https://av-line.github.io/SWOOD_AVL/Report_Test/CSS/avl-report_colors.css" />
+  <link rel="stylesheet" href="https://av-line.github.io/SWOOD_AVL/Report_Test/CSS/avl-report_style.css" />
+  <link rel="stylesheet" href="https://av-line.github.io/SWOOD_AVL/Report_Test/CSS/avl-report_dashboard.css" />
+  <link rel="stylesheet" href="https://av-line.github.io/SWOOD_AVL/Report_Test/CSS/avl-report_pdf-print.css" />
 
   <!-- Local Project Data (Relative reference — place in report root directory) -->
-  <script charset="windows-1252" src="https://av-line.github.io/SWOOD_AVL/Report_Test/_SOURCE/JS/tabledata.js"></script>
+  <script charset="windows-1252" src="_SOURCE/JS/tabledata.js"></script>
 
   <!-- External CDN Libraries for offline execution -->
   \${CDN_SCRIPTS.map(s => \`<script src="\${s}"></script>\`).join('\\n  ')}

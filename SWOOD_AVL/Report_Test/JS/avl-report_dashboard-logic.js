@@ -60,7 +60,7 @@
                     }, 300);
 
                     // Load the massive 25MB+ eDrawing HTML file ONLY when requested
-                    edrawingsIframe.src = "https://av-line.github.io/SWOOD_AVL/Report_Test/_SOURCE/HTML/" + proj.FILENAME + "_eDrawings.HTML";
+                    edrawingsIframe.src = "https://av-line.github.io/SWOOD_AVL/Report_Test/HTML/" + proj.FILENAME + "_eDrawings.HTML";
                 });
             }
         }

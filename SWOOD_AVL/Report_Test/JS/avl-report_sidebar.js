@@ -1,6 +1,6 @@
 const isIndex = window.location.pathname.toLowerCase().endsWith('report.html') || window.location.pathname.endsWith('/');
 const rootPrefix = isIndex ? '' : '../../';
-const htmlPrefix = isIndex ? 'https://av-line.github.io/SWOOD_AVL/Report_Test/_SOURCE/HTML/' : '';
+const htmlPrefix = isIndex ? 'https://av-line.github.io/SWOOD_AVL/Report_Test/HTML/' : '';
 
 // Dynamically determine the root file name from tabledata.js if available
 let overviewLink = `${rootPrefix}REPORT.html`;

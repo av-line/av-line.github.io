@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title data-i18n="page.title.cabinets">AV-Line | Cabinets</title>
+  <link rel="stylesheet" href="../CSS/avl-report_colors.css" />
+  <link rel="stylesheet" href="../CSS/avl-report_style.css?v=2.1.0" />
+  <!-- Google Material Symbols -->
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" />
+
+  <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+
+  <!-- Tabulator CSS & JS (from CDN) -->
+  <link href="https://unpkg.com/tabulator-tables@6.2.1/dist/css/tabulator.min.css" rel="stylesheet">
+  <script type="text/javascript" src="https://unpkg.com/tabulator-tables@6.2.1/dist/js/tabulator.min.js"></script>
+
+  <!-- Local Static Data -->
+  <script charset="windows-1252" src="../JS/tabledata.js"></script>
+
+  <style>
+    /* Base Tabulator Styling (Matches Panels) */
+    .tabulator {
+      margin-top: 1rem;
+      border: 1px solid var(--color-bg-secondary);
+      background-color: var(--color-bg-primary);
+      color: var(--color-text-primary);
+      font-family: inherit;
+      border-radius: 1px;
+    }
+
+    .tabulator-header {
+      border-bottom: 1px solid var(--color-border-hr) !important;
+      color: var(--color-text-primary) !important;
+    }
+
+    .tabulator-header .tabulator-col {
+      background-color: var(--color-bg-sidebar) !important;
+      color: var(--color-text-primary) !important;
+      border-right: 1px solid var(--color-bg-secondary) !important;
+    }
+
+    .tabulator-row {
+      background-color: var(--color-bg-sidebar) !important;
+      border-bottom: 1px solid var(--color-bg-secondary) !important;
+      color: var(--color-text-primary) !important;
+      cursor: pointer;
+    }
+
+    .tabulator-row:nth-child(even) {
+      background-color: var(--color-bg-primary) !important;
+    }
+
+    .tabulator-row:hover {
+      background-color: var(--color-hover-secondary) !important;
+    }
+
+    /* Search and Group Input styling natively matched */
+    .table-header-panel {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      margin-bottom: 0.5rem;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .control-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+      width: 100%;
+      flex: 1;
+    }
+
+    .control-wrapper.search-wrap {
+      max-width: 300px;
+    }
+
+    .control-wrapper.group-wrap {
+      max-width: 200px;
+    }
+
+    .control-wrapper .control-icon {
+      position: absolute;
+      left: 10px;
+      color: var(--color-active-primary);
+      font-size: 20px;
+      pointer-events: none;
+    }
+
+    #global-search,
+    #detail-global-search,
+    #detail-group-by {
+      padding: 0.5rem 1rem 0.5rem 2.2rem;
+      font-size: 1rem;
+      border-radius: 1px;
+      border: 1px solid var(--color-bg-secondary);
+      width: 100%;
+      outline: none;
+      background-color: var(--color-bg-primary);
+      color: var(--color-text-primary);
+      font-family: inherit;
+    }
+
+    #global-search:focus,
+    #detail-global-search:focus,
+    #detail-group-by:focus {
+      border-color: var(--color-active-primary);
+      box-shadow: 0 0 0 2px rgba(0, 153, 217, 0.2);
+    }
+
+    #detail-group-by {
+      cursor: pointer;
+    }
+
+    /* Export Menu styling */
+    .export-icon-btn {
+      background-color: var(--color-bg-primary);
+      border: 1px solid var(--color-bg-secondary);
+      color: var(--color-active-primary);
+      border-radius: 1px;
+      padding: 0 12px;
+      height: 100%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      box-shadow: none;
+    }
+
+    .export-icon-btn:hover,
+    .export-icon-btn.active {
+      background-color: var(--color-hover-secondary);
+      border-color: var(--color-active-primary);
+    }
+
+    .export-menu-content {
+      display: none;
+      position: absolute;
+      right: 0;
+      top: 100%;
+      margin-top: 5px;
+      background-color: var(--color-bg-sidebar);
+      border: 1px solid var(--color-bg-secondary);
+      box-shadow: 0 4px 12px var(--color-shadow);
+      z-index: 100;
+      border-radius: 1px;
+      overflow: hidden;
+      min-width: 150px;
+    }
+
+    .export-menu-content.show {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .export-menu-content button {
+      background: none;
+      border: none;
+      padding: 10px 15px;
+      text-align: left;
+      color: var(--color-text-primary);
+      cursor: pointer;
+      border-bottom: 1px solid var(--color-bg-secondary);
+      font-family: inherit;
+      white-space: nowrap;
+    }
+
+    .export-menu-content button:last-child {
+      border-bottom: none;
+    }
+
+    .export-menu-content button:hover {
+      background-color: var(--color-hover-secondary);
+    }
+
+    /* Detail View Styles */
+    #detail-components-table .tabulator-cell {
+      padding: 4px;
+    }
+
+    .tabulator-row.tabulator-group span {
+      color: var(--color-active-primary) !important;
+      margin-left: 10px;
+    }
+
+    .tabulator-row.tabulator-selected,
+    .tabulator-row.tabulator-selected:nth-child(even) {
+      background-color: var(--color-sel-row-bg) !important;
+      outline: 1px solid var(--color-sel-row-border);
+      color: inherit !important;
+    }
+
+    .tabulator-row.tabulator-selected:hover {
+      background-color: var(--color-sel-row-hover) !important;
+    }
+
+    .component-filename,
+    .raw-dimension {
+      color: var(--color-text-placeholder);
+    }
+
+    .tabulator-row.tabulator-selected .component-filename,
+    .tabulator-row.tabulator-selected .raw-dimension {
+      color: var(--color-text-primary) !important;
+    }
+
+    /* Edge Icon Column */
+    .tabulator .tabulator-cell.edge-icon-cell {
+      padding: 4px 2px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .tabulator .tabulator-cell.edge-icon-cell svg {
+      flex-shrink: 0;
+    }
+
+    /* 3D Tooltip Overrides */
+    .viewer-info-container {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      z-index: 100;
+    }
+
+    .viewer-info-icon {
+      font-size: 28px;
+      color: var(--color-active-primary);
+      cursor: help;
+      user-select: none;
+      opacity: 0.8;
+      transition: opacity 0.2s;
+    }
+
+    .viewer-info-icon:hover {
+      opacity: 1;
+    }
+
+    .viewer-info-tooltip {
+      position: absolute;
+      top: 0;
+      left: 40px;
+      background: var(--color-bg-sidebar);
+      border: 1px solid var(--color-border-hr);
+      padding: 15px;
+      border-radius: 4px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      width: max-content;
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+      pointer-events: none;
+      opacity: 0.95;
+    }
+
+    .viewer-info-container:hover .viewer-info-tooltip {
+      display: flex;
+    }
+
+    .viewer-info-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .viewer-info-row .material-symbols-rounded {
+      font-size: 20px;
+      color: var(--color-active-primary);
+      margin-top: 2px;
+    }
+
+    .viewer-info-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .viewer-info-text strong {
+      color: var(--color-text-primary);
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .viewer-info-text span {
+      color: var(--color-text-placeholder);
+      font-size: 12px;
+    }
+
+    /* Back Button Hover */
+    #close-detail-btn {
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+
+    #close-detail-btn:hover {
+      background-color: var(--color-hover-secondary) !important;
+      border-color: var(--color-active-primary) !important;
+      color: var(--color-active-primary) !important;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Navbar -->
+  <nav class="site-nav">
+    <button class="sidebar-toggle" aria-label="Toggle sidebar" title="Toggle sidebar">
+      <span class="material-symbols-rounded">menu</span>
+    </button>
+  </nav>
+
+  <div class="container">
+    <script charset="UTF-8" src="../JS/avl-report_sidebar.js?v=2.1.0"></script>
+
+    <!-- Main Content -->
+    <div class="main-content"
+      style="height: 100vh; display: flex; flex-direction: column; overflow: hidden; padding-bottom: 0;">
+
+      <!-- Master View: Main Cabinets Table -->
+      <div id="master-view" style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
+        <div
+          style="flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 0.5rem;">
+          <h1 class="page-title" style="margin-bottom: 0;" data-i18n="page.title.cabinets">Cabinets Data</h1>
+
+          <div class="table-header-panel">
+            <div id="item-count-display"
+              style="font-weight: 600; color: var(--color-active-primary); font-size: 1.05rem; padding-left: 0.5rem;">
+              Total: 0 items</div>
+            <div style="display: flex; gap: 0.5rem; align-items: stretch; flex-wrap: wrap;">
+              <div class="control-wrapper search-wrap">
+                <span class="material-symbols-rounded control-icon">search</span>
+                <input type="text" id="global-search" placeholder="Search across cabinets..."
+                  data-i18n-placeholder="ui.search" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card"
+          style="flex: 1; margin-bottom: 15px; display: flex; flex-direction: column; padding: 1px; overflow: hidden; border: none;">
+          <div id="cabinets-table" style="flex: 1; width: 100%;"
+            data-col-widths='{"SNR_CAB":"10%","DESCRIPTION_CAB":"40%","QTY":"10%","FILENAME":"20%","COMMENT_CAB":"20%"}'>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detail View: Components & 3D Viewer -->
+      <div id="detail-view"
+        style="display: none; flex-direction: column; flex: 1; overflow: hidden; margin-bottom: 15px;">
+        <div class="detail-header"
+          style="flex-shrink: 0; display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem;">
+          <button id="close-detail-btn" class="icon-btn"
+            style="background: var(--color-bg-sidebar); border: 1px solid var(--color-border-hr); border-radius: 4px; padding: 5px 12px; display: flex; align-items: center; gap: 6px; font-size: 0.95rem; font-weight: 500; color: var(--color-text-primary);">
+            <span class="material-symbols-rounded" style="font-size: 1.2rem;">arrow_back</span> <span
+              data-i18n="modal.close" style="color: inherit;">Back</span>
+          </button>
+          <h2 id="detail-title" style="margin: 0; color: var(--color-text-primary); font-size: 1.25rem;">Cabinet Details
+          </h2>
+        </div>
+
+        <div class="detail-main"
+          style="display: flex; flex: 1; overflow: hidden; background-color: var(--color-bg-primary); border: 1px solid var(--color-border-hr); border-radius: 4px;">
+          <!-- Components Table (Left) -->
+          <div class="detail-left"
+            style="flex: 1; display: flex; flex-direction: column; padding: 10px; border-right: 1px solid var(--color-border-hr); background: var(--color-bg-primary);">
+            <div class="table-header-panel" style="margin-bottom: 0.5rem;">
+              <div style="display: flex; align-items: baseline; gap: 12px; margin-right: auto;">
+                <h3 style="margin: 0; color: var(--color-text-primary);" data-i18n="dash.breakdown">Components</h3>
+                <div id="detail-item-count-display"
+                  style="font-weight: 600; color: var(--color-active-primary); font-size: 1.05rem;">Total: 0 items</div>
+              </div>
+
+              <div style="display: flex; gap: 0.5rem; align-items: stretch; flex-wrap: wrap;">
+                <div class="control-wrapper group-wrap">
+                  <span class="material-symbols-rounded control-icon">folder_copy</span>
+                  <select id="detail-group-by" title="Group by Field">
+                    <option value="" data-i18n="ui.group.none">No Grouping</option>
+                    <option value="typeSort" selected data-i18n="ui.group.type">Group by Type</option>
+                    <option value="PAN_MATREF" data-i18n="th.matref">Group by Material</option>
+                    <option value="DESCRIPTION" data-i18n="th.desc">Group by Desc</option>
+                  </select>
+                </div>
+
+                <div class="control-wrapper search-wrap">
+                  <span class="material-symbols-rounded control-icon">search</span>
+                  <input type="text" id="detail-global-search" placeholder="Search..."
+                    data-i18n-placeholder="ui.search" />
+                </div>
+
+                <div class="export-dropdown" style="position: relative; display: flex; align-items: stretch;">
+                  <button id="export-detail-btn" class="export-icon-btn" title="Save / Export Details"
+                    data-i18n-title="ui.export.tooltip">
+                    <span class="material-symbols-rounded">file_save</span>
+                  </button>
+                  <div id="export-detail-menu" class="export-menu-content">
+                    <button id="export-detail-csv" data-i18n="ui.export.csv">Export to CSV</button>
+                    <button id="export-detail-xlsx" data-i18n="ui.export.xlsx">Export to XLSX</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div id="detail-components-table" style="flex: 1; min-height: 400px; overflow: auto;"
+              data-col-widths='{"SNR_CABList":"5%","DESCRIPTION":"20%","QTY":"5%","PAN_MATREF":"15%","PAN_LWEB":"10%","PAN_WWEB":"10%","PAN_TWL":"10%","PAN_EBCOUNT":"10%"}'>
+            </div>
+          </div>
+          <!-- Viewer & Thumbnail (Right) -->
+          <div class="detail-right"
+            style="flex: 1; display: flex; flex-direction: column; background: var(--color-bg-sidebar);">
+            <!-- Required UI Hooks for viewer-logic.js (hidden) -->
+            <div id="loading-overlay"
+              style="display: none; align-items: center; justify-content: center; position: absolute; inset: 0; background: rgba(0,0,0,0.5); z-index: 10;">
+              <div class="spinner"
+                style="border: 4px solid #f3f3f3; border-top: 4px solid var(--color-active-primary); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite;">
+              </div>
+            </div>
+            <div id="loading-error" style="display: none; padding: 10px; color: #ff4444; text-align: center;"></div>
+            <!-- 3D Canvas -->
+            <div class="detail-viewer-wrapper"
+              style="flex: 1.5; border-bottom: 1px solid var(--color-border-hr); position: relative;">
+
+              <div class="viewer-info-container">
+                <span class="material-symbols-rounded viewer-info-icon">3d_rotation</span>
+                <div class="viewer-info-tooltip">
+                  <h4 data-i18n="viewer.controls_title">Controls</h4>
+                  <div class="viewer-info-row">
+                    <span class="material-symbols-rounded">mouse</span>
+                    <div class="viewer-info-text">
+                      <strong data-i18n="viewer.rotate_title">Rotate</strong>
+                      <span data-i18n="viewer.rotate_desc">Middle mouse button drag</span>
+                    </div>
+                  </div>
+                  <div class="viewer-info-row">
+                    <span class="material-symbols-rounded">open_with</span>
+                    <div class="viewer-info-text">
+                      <strong data-i18n="viewer.pan_title">Pan</strong>
+                      <span data-i18n="viewer.pan_desc">Right mouse button drag</span>
+                    </div>
+                  </div>
+                  <div class="viewer-info-row">
+                    <span class="material-symbols-rounded">zoom_in</span>
+                    <div class="viewer-info-text">
+                      <strong data-i18n="viewer.zoom_title">Zoom</strong>
+                      <span data-i18n="viewer.zoom_desc">Scroll wheel up / down</span>
+                    </div>
+                  </div>
+                  <div class="viewer-info-row">
+                    <span class="material-symbols-rounded">ads_click</span>
+                    <div class="viewer-info-text">
+                      <strong data-i18n="viewer.select_title">Select</strong>
+                      <span data-i18n="viewer.select_desc">Left mouse click</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div id="canvas-container" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0;"></div>
+              
+              <!-- Cabinet Image fallback container -->
+              <div id="cabinet-img-fallback-container" style="display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0; align-items: center; justify-content: center; padding: 20px; background: var(--color-bg-sidebar); box-sizing: border-box;">
+                <img id="cabinet-img-fallback" src="" alt="Cabinet View" style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 4px; display: none;" />
+                <div id="cabinet-img-error" style="display: none; color: var(--color-text-placeholder); font-size: 1.1rem; font-weight: 500; text-align: center;" data-i18n="viewer.no_image_found">No IMG of the Cabinet founded.</div>
+              </div>
+            </div>
+            <!-- Panel Details & Thumbnail Area -->
+            <div class="detail-thumbnail-wrapper"
+              style="flex: 1; display: flex; align-items: stretch; justify-content: space-between; padding: 20px; gap: 20px; background: var(--color-bg-primary);">
+              <!-- Panel Details Left -->
+              <div id="panel-details-container"
+                style="flex: 1; display: flex; flex-direction: column; gap: 12px; font-size: 0.95rem; color: var(--color-text-primary); border-right: 1px solid var(--color-border-hr); padding-right: 20px; min-width: 200px;">
+                <!-- This header changes based on selection -->
+                <h4 id="details-header"
+                  style="margin: 0; color: var(--color-text-placeholder); text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px;">
+                  Cabinet Info</h4>
+
+                <!-- Cabinet Specific Info (Visible when nothing selected) -->
+                <div id="cabinet-info-group" style="display: flex; flex-direction: column; gap: 8px;">
+                  <div style="display: grid; grid-template-columns: auto 1fr; gap: 2px 10px;">
+                    <span style="color: var(--color-text-placeholder);" data-i18n="ui.snr">SNR</span> <span
+                      id="cab-detail-snr">-</span>
+                    <span style="color: var(--color-text-placeholder);" data-i18n="ui.desc_short">Desc</span> <strong
+                      id="cab-detail-desc">-</strong>
+                    <span style="color: var(--color-text-placeholder);" data-i18n="ui.qty_short">Qty</span> <span
+                      id="cab-detail-qty">-</span>
+                    <span style="color: var(--color-text-placeholder);" data-i18n="ui.file">File</span> <span
+                      id="cab-detail-file" style="font-size: 0.85em;">-</span>
+                  </div>
+                  <div
+                    style="margin-top: 5px; padding: 8px; background: var(--color-hover-secondary); border-radius: 2px; font-style: italic; font-size: 0.9em; min-height: 40px;"
+                    id="cab-detail-comment">
+                    -
+                  </div>
+                </div>
+
+                <!-- Component Specific Info (Visible when component selected) -->
+                <div id="component-info-group" style="display: none; flex-direction: column; gap: 15px;">
+                  <div class="detail-group">
+                    <strong
+                      style="display: block; color: var(--color-active-primary); margin-bottom: 5px; text-transform: uppercase; font-size: 0.8rem;"
+                      data-i18n="ui.edges">Kanten</strong>
+                    <div style="display: grid; grid-template-columns: auto 1fr; gap: 2px 10px;">
+                      <span data-i18n="ui.edges.l">L:</span> <span id="detail-eb-l">-</span>
+                      <span data-i18n="ui.edges.r">R:</span> <span id="detail-eb-r">-</span>
+                      <span data-i18n="ui.edges.f">V:</span> <span id="detail-eb-f">-</span>
+                      <span data-i18n="ui.edges.b">H:</span> <span id="detail-eb-b">-</span>
+                    </div>
+                  </div>
+                  <div class="detail-group">
+                    <strong
+                      style="display: block; color: var(--color-active-primary); margin-bottom: 5px; text-transform: uppercase; font-size: 0.8rem;"
+                      data-i18n="ui.lam">Belag</strong>
+                    <div style="display: grid; grid-template-columns: auto 1fr; gap: 2px 10px;">
+                      <span data-i18n="ui.lam.o">O:</span> <span id="detail-lam-o">-</span>
+                      <span data-i18n="ui.lam.u">U:</span> <span id="detail-lam-u">-</span>
+                    </div>
+                  </div>
+                  <div class="detail-group">
+                    <strong
+                      style="display: block; color: var(--color-active-primary); margin-bottom: 5px; text-transform: uppercase; font-size: 0.8rem;"
+                      data-i18n="ui.cnc">CNC</strong>
+                    <div style="display: grid; grid-template-columns: auto 1fr; gap: 2px 10px;">
+                      <span>A:</span> <span id="detail-cnc-a">-</span>
+                      <span>B:</span> <span id="detail-cnc-b">-</span>
+                    </div>
+                  </div>
+                  <div id="comp-comment-group" style="display: flex; flex-direction: column; gap: 4px;">
+                    <strong
+                      style="display: block; color: var(--color-active-primary); text-transform: uppercase; font-size: 0.8rem; margin-bottom: 2px;"
+                      data-i18n="th.comment">Comment</strong>
+                    <div id="comp-detail-comment"
+                      style="padding: 8px 10px; background: var(--color-hover-secondary); border-left: 3px solid var(--color-active-primary); border-radius: 2px; font-style: italic; font-size: 0.88em; line-height: 1.5; min-height: 38px; color: var(--color-text-primary); word-break: break-word;">
+                      —</div>
+                  </div>
+                </div>
+
+                <!-- Fitting Specific Info (Visible when fitting selected) -->
+                <div id="fitting-info-group" style="display: none; flex-direction: column; gap: 8px;">
+                  <div style="display: grid; grid-template-columns: auto 1fr; gap: 2px 10px;">
+                    <span style="color: var(--color-text-placeholder);" data-i18n="ui.file">File</span> <span
+                      id="fit-detail-file">-</span>
+                    <span style="color: var(--color-text-placeholder);" data-i18n="ui.supplier">Supplier</span> <span
+                      id="fit-detail-supplier">-</span>
+                    <span style="color: var(--color-text-placeholder);" data-i18n="ui.suppliercode">Code</span> <span
+                      id="fit-detail-code">-</span>
+                  </div>
+                  <div
+                    style="margin-top: 5px; padding: 8px; background: var(--color-hover-secondary); border-radius: 2px; font-size: 0.9em; min-height: 40px; font-style: italic;"
+                    id="fit-detail-desc-ext">-</div>
+                </div>
+              </div>
+              <!-- Real Thumbnail Right -->
+              <div id="detail-thumbnail-wrapper"
+                style="flex: 2; display: flex; align-items: center; justify-content: center; position: relative;">
+                <img id="detail-thumbnail-img" src="" alt="Thumbnail Area"
+                  style="max-width: 100%; max-height: 100%; object-fit: contain;" onerror="this.style.display='none'"
+                  onload="this.style.display='block'" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Document Footer -->
+      <div class="doc-footer"
+        style="flex-shrink: 0; padding: 15px; font-size: 0.9em; border-top: 1px solid var(--color-border-hr); color: var(--color-text-primary); background-color: var(--color-bg-primary);">
+        <div
+          style="display: grid; grid-template-columns: auto 1fr auto 1fr auto 1fr; gap: 8px 20px; align-items: baseline;">
+          <strong style="color: var(--color-text-placeholder);" data-i18n="foot.cus">Cus:</strong> <span
+            id="foot-cus"></span>
+          <strong style="color: var(--color-text-placeholder);" data-i18n="foot.projnr">ProjNr:</strong> <span
+            id="foot-projnr"></span>
+          <strong style="color: var(--color-text-placeholder);" data-i18n="foot.eng">Eng:</strong> <span
+            id="foot-eng"></span>
+          <strong style="color: var(--color-text-placeholder);" data-i18n="foot.projname">ProjName:</strong> <span
+            id="foot-projname"></span>
+          <strong style="color: var(--color-text-placeholder);" data-i18n="foot.projpos">ProjPos:</strong> <span
+            id="foot-projpos"></span>
+          <strong style="color: var(--color-text-placeholder);" data-i18n="foot.report">Report:</strong> <span
+            id="foot-report"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script charset="UTF-8" src="../JS/avl-report_units.js"></script>
+  <script charset="UTF-8" src="../JS/avl-report_csv.js"></script>
+  <script charset="UTF-8" src="../JS/avl-report_offline-export.js"></script>
+  <script charset="UTF-8" src="../JS/avl-report_lang.js"></script>
+  <script charset="UTF-8" src="../JS/avl-report_script.js"></script>
+  <!-- ThreeJS Includes -->
+  <script charset="UTF-8" src="../JS/three/three.min.js"></script>
+  <script charset="UTF-8" src="../JS/three/OrbitControls.js"></script>
+  <script charset="UTF-8" src="../JS/three/GLTFLoader.js"></script>
+  <script>window.VIEWER_EMPTY_START = true;</script>
+  <script charset="UTF-8" src="../JS/avl-report_viewer-logic.js"></script>
+  <!-- Custom Cabinets Module Logic -->
+  <script charset="UTF-8" src="../JS/avl-report_cabinets-logic.js?v=1.0.2"></script>
+</body>
+
+</html>

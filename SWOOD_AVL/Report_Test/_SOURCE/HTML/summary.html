@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title data-i18n="page.title.summary">AV-Line | Summary Report</title>
+    <link rel="stylesheet" href="../CSS/avl-report_colors.css" />
+  <link rel="stylesheet" href="../CSS/avl-report_style.css?v=2.1.0" />
+    <!-- Google Material Symbols -->
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0"
+    />
+    
+    <!-- Tabulator CSS & JS (from CDN) -->
+    <link href="https://unpkg.com/tabulator-tables@6.2.1/dist/css/tabulator.min.css" rel="stylesheet">
+    <script type="text/javascript" src="https://unpkg.com/tabulator-tables@6.2.1/dist/js/tabulator.min.js"></script>
+    <script type="text/javascript" src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    
+    <!-- Local Static Data (Renamed from JSON) -->
+    <script charset="windows-1252" src="../JS/tabledata.js"></script>
+
+    <!-- Theming integration for Tabulator natively parsing AV-Line style.css variables -->
+    <style>
+      /* Base table overrides to fuse directly with local CSS variables */
+      .tabulator { 
+        margin-top: 1rem; 
+        border: 1px solid var(--color-bg-secondary); 
+        background-color: var(--color-bg-primary); 
+        color: var(--color-text-primary); 
+        font-family: inherit;
+        border-radius: 1px;
+      }
+      
+      .tabulator-header { 
+        border-bottom: 1px solid var(--color-border-hr) !important; 
+        color: var(--color-text-primary) !important;
+      }
+      
+      .tabulator-header .tabulator-col { 
+        background-color: var(--color-bg-sidebar) !important; 
+        color: var(--color-text-primary) !important; 
+        border-right: 1px solid var(--color-bg-secondary) !important; 
+      }
+      
+      .tabulator-row { 
+        background-color: var(--color-bg-sidebar) !important; 
+        border-bottom: 1px solid var(--color-bg-secondary) !important; 
+        color: var(--color-text-primary) !important;
+      }
+      
+      .tabulator-row:nth-child(even) { 
+        background-color: var(--color-bg-primary) !important; 
+      }
+      
+      .tabulator-row:hover { 
+        background-color: var(--color-hover-secondary) !important; cursor: default;
+      }
+      
+      .tabulator-footer { 
+        background-color: var(--color-bg-sidebar) !important; 
+        border-top: 1px solid var(--color-border-hr) !important; 
+        color: var(--color-text-primary) !important;
+      }
+      
+      .tabulator-footer .tabulator-page { 
+        background: var(--color-bg-primary) !important; 
+        color: var(--color-text-primary) !important; 
+        border: 1px solid var(--color-bg-secondary) !important; 
+      }
+      
+      .tabulator-footer .tabulator-page.active { 
+        background: var(--color-active-primary) !important; 
+        color: #fff !important; 
+        border-color: var(--color-active-primary) !important; 
+      }
+      
+      /* Search and Group Input styling natively matched */
+      .table-header-panel { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 0.5rem; gap: 0.5rem; flex-wrap: wrap; }
+      
+      /* Export Menu styling */
+      .export-icon-btn {
+        background-color: var(--color-bg-primary); border: 1px solid var(--color-bg-secondary); 
+        color: var(--color-active-primary); border-radius: 1px; padding: 0 12px; height: 100%;
+        cursor: pointer; display: flex; align-items: center; justify-content: center; 
+        transition: all 0.2s; box-shadow: none;
+      }
+      .export-icon-btn:hover, .export-icon-btn.active { 
+        background-color: var(--color-hover-secondary); border-color: var(--color-active-primary); 
+      }
+      .export-menu-content {
+        display: none; position: absolute; right: 0; top: 100%; margin-top: 5px;
+        background-color: var(--color-bg-sidebar); border: 1px solid var(--color-bg-secondary);
+        box-shadow: 0 4px 12px var(--color-shadow); z-index: 100;
+        border-radius: 1px; overflow: hidden; min-width: 150px;
+      }
+      .export-menu-content.show { display: flex; flex-direction: column; }
+      .export-menu-content button {
+        background: none; border: none; padding: 10px 15px; text-align: left;
+        color: var(--color-text-primary); cursor: pointer; border-bottom: 1px solid var(--color-bg-secondary);
+        font-family: inherit; white-space: nowrap;
+      }
+      .export-menu-content button:last-child { border-bottom: none; }
+      .export-menu-content button:hover { background-color: var(--color-hover-secondary); }
+
+    </style>
+  </head>
+  <body>
+    <!-- Navbar -->
+    <nav class="site-nav">
+      <button class="sidebar-toggle" aria-label="Toggle sidebar" title="Toggle sidebar">
+        <span class="material-symbols-rounded">menu</span>
+      </button>
+    </nav>
+
+    <div class="container">
+      <!-- Sidebar Injection via JS for local file access -->
+      <script charset="UTF-8" src="../JS/avl-report_sidebar.js?v=2.1.0"></script>
+
+      <!-- Site main content -->
+      <div class="main-content" style="height: 100vh; display: flex; flex-direction: column; overflow: hidden; padding-bottom: 0;">
+        <div style="flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 0.5rem;">
+          <h1 class="page-title" style="margin-bottom: 0;" data-i18n="page.title.summary">Summary Data</h1>
+          
+          <div class="table-header-panel">
+            <div style="flex: 1;"></div>
+            <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+              <label style="display: flex; align-items: center; gap: 0.5rem; color: var(--color-text-primary); cursor: pointer; padding-right: 10px;">
+                <input type="checkbox" id="use-factor-cb" style="margin: 0; cursor: pointer;">
+                <span style="font-weight: 500;" data-i18n="ui.factor">Factor</span>
+              </label>
+              <div class="export-dropdown" style="position: relative; display: flex; align-items: stretch; height: 35px;">
+                <button id="export-all-btn" class="export-icon-btn" title="Export All Summaries" data-i18n-title="ui.export.tooltip">
+                  <span class="material-symbols-rounded">file_save</span>
+                </button>
+                <div id="export-all-menu" class="export-menu-content">
+                  <button id="export-all-csv" data-i18n="ui.export.all.csv">Export All to CSV</button>
+                  <button id="export-all-xlsx" data-i18n="ui.export.all.xlsx">Export All to XLSX</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="flex: 1; margin-bottom: 30px; display: flex; flex-direction: column; padding: 20px; overflow-y: auto; border: 1px solid var(--color-bg-secondary); background: var(--color-bg-primary);">
+          
+          <div id="material-section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+              <h2 style="margin: 0; color: var(--color-text-primary);" data-i18n="section.material">Material Summary</h2>
+            </div>
+            <div id="material-summary-table" style="width: 100%; margin-bottom: 2rem;" data-col-widths='{"PAN_MATREF":"25%","PAN_MATDESC":"50%","PAN_MAT_T":"10%"}'></div>
+          </div>
+
+          <div id="edgeband-section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+              <h2 style="margin: 0; color: var(--color-text-primary);" data-i18n="section.edgeband">Edgeband Summary (lm)</h2>
+            </div>
+            <div id="edgeband-summary-table" style="width: 100%; margin-bottom: 2rem;" data-col-widths='{"EB REF":"25%","EB Description":"50%","EB Thickness":"10%"}'></div>
+          </div>
+
+          <div id="laminate-section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+              <h2 style="margin: 0; color: var(--color-text-primary);" data-i18n="section.laminate">Laminate Summary (m²)</h2>
+            </div>
+            <div id="laminate-summary-table" style="width: 100%; margin-bottom: 1rem;" data-col-widths='{"LAM REF":"25%","LAM Description":"50%","LAM Thickness":"10%"}'></div>
+          </div>
+
+        </div>
+        
+        <!-- Document Footer populated seamlessly by summary-tables.js -->
+        <div class="doc-footer" style="flex-shrink: 0; padding: 15px; font-size: 0.9em; border-top: 1px solid var(--color-border-hr); color: var(--color-text-primary); background-color: var(--color-bg-primary);">
+          <div style="display: grid; grid-template-columns: auto 1fr auto 1fr auto 1fr; gap: 8px 20px; align-items: baseline;">
+            <strong style="color: var(--color-text-placeholder);" data-i18n="foot.cus">Cus:</strong> <span id="foot-cus"></span>
+            <strong style="color: var(--color-text-placeholder);" data-i18n="foot.projnr">ProjNr:</strong> <span id="foot-projnr"></span>
+            <strong style="color: var(--color-text-placeholder);" data-i18n="foot.eng">Eng:</strong> <span id="foot-eng"></span>
+            
+            <strong style="color: var(--color-text-placeholder);" data-i18n="foot.projname">ProjName:</strong> <span id="foot-projname"></span>
+            <strong style="color: var(--color-text-placeholder);" data-i18n="foot.projpos">ProjPos:</strong> <span id="foot-projpos"></span>
+            <strong style="color: var(--color-text-placeholder);" data-i18n="foot.report">Report:</strong> <span id="foot-report"></span>
+          </div>
+        </div>
+        
+        <!-- Back to Top Button -->
+        <button id="back-to-top" class="back-to-top-btn" title="Back to Top">
+          <span class="material-symbols-rounded">arrow_upward</span>
+        </button>
+      </div>
+    </div>
+
+  <script charset="UTF-8" src="../JS/avl-report_units.js"></script>
+  <script charset="UTF-8" src="../JS/avl-report_csv.js"></script>
+  <script charset="UTF-8" src="../JS/avl-report_offline-export.js"></script>
+  <script charset="UTF-8" src="../JS/avl-report_lang.js"></script>
+    <script charset="UTF-8" src="../JS/avl-report_script.js"></script>
+    <script charset="UTF-8" src="../JS/avl-report_summary-tables.js"></script>
+  </body>
+</html>

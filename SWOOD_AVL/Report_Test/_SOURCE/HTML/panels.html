@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title data-i18n="page.title.panels">AV-Line | Panels</title>
+  <link rel="stylesheet" href="../CSS/avl-report_colors.css" />
+  <link rel="stylesheet" href="../CSS/avl-report_style.css?v=2.1.0" />
+  <!-- Google Material Symbols -->
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" />
+
+  <!-- Tabulator CSS & JS (from CDN) -->
+  <link href="https://unpkg.com/tabulator-tables@6.2.1/dist/css/tabulator.min.css" rel="stylesheet">
+  <script type="text/javascript" src="https://unpkg.com/tabulator-tables@6.2.1/dist/js/tabulator.min.js"></script>
+  <script type="text/javascript" src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+  <!-- QR Code generator (for production labels) -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  <!-- jsPDF for label printing -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <!-- Local Static Data (Renamed from JSON) -->
+  <script charset="windows-1252" src="../JS/tabledata.js"></script>
+
+  <!-- Theming integration for Tabulator natively parsing AV-Line style.css variables -->
+  <style>
+    /* Base table overrides to fuse directly with local CSS variables */
+    .tabulator {
+      margin-top: 1rem;
+      border: 1px solid var(--color-bg-secondary);
+      background-color: var(--color-bg-primary);
+      color: var(--color-text-primary);
+      font-family: inherit;
+      border-radius: 1px;
+    }
+
+    .tabulator-header {
+      border-bottom: 1px solid var(--color-border-hr) !important;
+      color: var(--color-text-primary) !important;
+    }
+
+    .tabulator-header .tabulator-col {
+      background-color: var(--color-bg-sidebar) !important;
+      color: var(--color-text-primary) !important;
+      border-right: 1px solid var(--color-bg-secondary) !important;
+    }
+
+    .tabulator-row {
+      background-color: var(--color-bg-sidebar) !important;
+      border-bottom: 1px solid var(--color-bg-secondary) !important;
+      color: var(--color-text-primary) !important;
+    }
+
+    .tabulator-row:nth-child(even) {
+      background-color: var(--color-bg-primary) !important;
+    }
+
+    .tabulator-row:hover {
+      background-color: var(--color-hover-secondary) !important;
+      cursor: pointer;
+    }
+
+    .tabulator-footer {
+      background-color: var(--color-bg-sidebar) !important;
+      border-top: 1px solid var(--color-border-hr) !important;
+      color: var(--color-text-primary) !important;
+    }
+
+    .tabulator-footer .tabulator-page {
+      background: var(--color-bg-primary) !important;
+      color: var(--color-text-primary) !important;
+      border: 1px solid var(--color-bg-secondary) !important;
+    }
+
+    .tabulator-footer .tabulator-page.active {
+      background: var(--color-active-primary) !important;
+      color: #fff !important;
+      border-color: var(--color-active-primary) !important;
+    }
+
+    /* Search and Group Input styling natively matched */
+    .table-header-panel {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      margin-bottom: 0.5rem;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .control-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+      width: 100%;
+      flex: 1;
+    }
+
+    .control-wrapper.search-wrap {
+      max-width: 300px;
+    }
+
+    .control-wrapper.group-wrap {
+      max-width: 200px;
+    }
+
+    .control-wrapper .control-icon {
+      position: absolute;
+      left: 10px;
+      color: var(--color-active-primary);
+      font-size: 20px;
+      pointer-events: none;
+    }
+
+    #global-search,
+    #group-by {
+      padding: 0.5rem 1rem 0.5rem 2.2rem;
+      font-size: 1rem;
+      border-radius: 1px;
+      border: 1px solid var(--color-bg-secondary);
+      width: 100%;
+      outline: none;
+      background-color: var(--color-bg-primary);
+      color: var(--color-text-primary);
+      font-family: inherit;
+    }
+
+    #global-search:focus,
+    #group-by:focus {
+      border-color: var(--color-active-primary);
+      box-shadow: 0 0 0 2px rgba(0, 153, 217, 0.2);
+    }
+
+    #group-by {
+      cursor: pointer;
+    }
+
+    /* Icon Action Buttons (Export, Print) */
+    .icon-action-btn {
+      background-color: var(--color-bg-primary);
+      border: 1px solid var(--color-bg-secondary);
+      color: var(--color-active-primary);
+      border-radius: 1px;
+      padding: 0 12px;
+      height: 100%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      transition: all 0.2s;
+      font-family: inherit;
+      font-size: 0.88rem;
+      white-space: nowrap;
+      box-shadow: none;
+    }
+
+    .icon-action-btn:hover,
+    .icon-action-btn.active {
+      background-color: var(--color-hover-secondary);
+      border-color: var(--color-active-primary);
+    }
+
+    .export-menu-content {
+      display: none;
+      position: absolute;
+      right: 0;
+      top: 100%;
+      margin-top: 5px;
+      background-color: var(--color-bg-sidebar);
+      border: 1px solid var(--color-bg-secondary);
+      box-shadow: 0 4px 12px var(--color-shadow);
+      z-index: 100;
+      border-radius: 1px;
+      overflow: hidden;
+      min-width: 150px;
+    }
+
+    .export-menu-content.show {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .export-menu-content button {
+      background: none;
+      border: none;
+      padding: 10px 15px;
+      text-align: left;
+      color: var(--color-text-primary);
+      cursor: pointer;
+      border-bottom: 1px solid var(--color-bg-secondary);
+      font-family: inherit;
+      white-space: nowrap;
+    }
+
+    .export-menu-content button:last-child {
+      border-bottom: none;
+    }
+
+    .export-menu-content button:hover {
+      background-color: var(--color-hover-secondary);
+    }
+
+    /* Color override for Tabulator Group Counters */
+    .tabulator-row.tabulator-group span {
+      color: var(--color-active-primary) !important;
+      margin-left: 10px;
+    }
+
+    /* Edge Icon Column */
+    .tabulator .tabulator-cell.edge-icon-cell {
+      padding: 4px 2px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .tabulator .tabulator-cell.edge-icon-cell svg {
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Navbar -->
+  <nav class="site-nav">
+    <button class="sidebar-toggle" aria-label="Toggle sidebar" title="Toggle sidebar">
+      <span class="material-symbols-rounded">menu</span>
+    </button>
+  </nav>
+
+  <div class="container">
+    <!-- Sidebar Injection via JS for local file access -->
+    <script charset="UTF-8" src="../JS/avl-report_sidebar.js?v=2.1.0"></script>
+
+    <!-- Site main content -->
+    <div class="main-content"
+      style="height: 100vh; display: flex; flex-direction: column; overflow: hidden; padding-bottom: 0;">
+      <div
+        style="flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 0.5rem;">
+        <h1 class="page-title" style="margin-bottom: 0;" data-i18n="page.title.panels">Panels Data</h1>
+
+        <!-- Top right Search & Grouping Fields -->
+        <div class="table-header-panel">
+          <div id="item-count-display"
+            style="font-weight: 600; color: var(--color-active-primary); font-size: 1.05rem; padding-left: 0.5rem;">
+            Total: 0 items
+          </div>
+
+          <div style="display: flex; gap: 0.5rem; align-items: stretch; flex-wrap: wrap;">
+            <div class="control-wrapper group-wrap">
+              <span class="material-symbols-rounded control-icon">folder_copy</span>
+              <select id="group-by" title="Group by Field">
+                <option value="" data-i18n="ui.group.none">No Grouping</option>
+                <option value="SNR_CAB" data-i18n="th.cabsnr">Cabinets SNR</option>
+                <option value="PAN_MATREF" data-i18n="th.matref">Material</option>
+                <option value="PAN_TWL" data-i18n="th.thickness">Thickness</option>
+                <option value="DESCRIPTION" data-i18n="th.desc">Description</option>
+              </select>
+            </div>
+
+            <div class="control-wrapper search-wrap">
+              <span class="material-symbols-rounded control-icon">search</span>
+              <input type="text" id="global-search" placeholder="Search across all data..."
+                data-i18n-placeholder="ui.search" />
+            </div>
+
+            <!-- Print all Labels -->
+            <div style="display: flex; align-items: stretch; margin-right: 0.5rem;">
+              <button id="print-all-lbl-btn" class="icon-action-btn" title="Print All Labels">
+                <span class="material-symbols-rounded">print</span>
+                Print all Labels
+              </button>
+            </div>
+
+            <div class="export-dropdown" style="position: relative; display: flex; align-items: stretch;">
+              <button id="export-btn" class="icon-action-btn" title="Save / Export Details"
+                data-i18n-title="ui.export.tooltip">
+                <span class="material-symbols-rounded">file_save</span>
+              </button>
+              <div id="export-menu" class="export-menu-content">
+                <button id="export-csv" data-i18n="ui.export.csv">Export to CSV</button>
+                <button id="export-xlsx" data-i18n="ui.export.xlsx">Export to XLSX</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card"
+        style="flex: 1; margin-bottom: 30px; display: flex; flex-direction: column; padding: 1px; overflow: hidden; border: none;">
+        <!-- Interactive Data Table Container (Tabulator handles its internal padding/scrolling) -->
+        <!-- Configure column widths natively directly via this JSON data attribute -->
+        <div id="data-table" style="flex: 1; width: 100%;"
+          data-col-widths='{"SNR_CAB":"5%","SNR_CABList":"5%","DESCRIPTION":"18%","PAN_MATREF":"10%","PAN_LWEB":"5%","PAN_WWEB":"5%","PAN_TWL":"5%","PAN_EBCOUNT":"5%"}'>
+        </div>
+      </div>
+
+      <!-- Document Footer populated seamlessly by panel-table.js -->
+      <div class="doc-footer"
+        style="flex-shrink: 0; padding: 15px; font-size: 0.9em; border-top: 1px solid var(--color-border-hr); color: var(--color-text-primary); background-color: var(--color-bg-primary);">
+        <div
+          style="display: grid; grid-template-columns: auto 1fr auto 1fr auto 1fr; gap: 8px 20px; align-items: baseline;">
+          <strong style="color: var(--color-text-placeholder);" data-i18n="foot.cus">Cus:</strong> <span
+            id="foot-cus"></span>
+          <strong style="color: var(--color-text-placeholder);" data-i18n="foot.projnr">ProjNr:</strong> <span
+            id="foot-projnr"></span>
+          <strong style="color: var(--color-text-placeholder);" data-i18n="foot.eng">Eng:</strong> <span
+            id="foot-eng"></span>
+
+          <strong style="color: var(--color-text-placeholder);" data-i18n="foot.projname">ProjName:</strong> <span
+            id="foot-projname"></span>
+          <strong style="color: var(--color-text-placeholder);" data-i18n="foot.projpos">ProjPos:</strong> <span
+            id="foot-projpos"></span>
+          <strong style="color: var(--color-text-placeholder);" data-i18n="foot.report">Report:</strong> <span
+            id="foot-report"></span>
+        </div>
+      </div>
+
+
+      <!-- Back to Top Button -->
+      <button id="back-to-top" class="back-to-top-btn" title="Back to Top">
+        <span class="material-symbols-rounded">arrow_upward</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Panel Details Modal -->
+  <div id="panel-modal" class="modal-overlay">
+    <div class="modal-window" style="max-width: 820px; width: 96vw;">
+      <div class="modal-header">
+        <h2 style="margin: 0; font-size: 1.1rem;" data-i18n="modal.paneldetails">Panel Details</h2>
+        <div style="display: flex; gap: 8px;">
+          <button id="modal-print-lbl" class="modal-close-btn" aria-label="Print Label" title="Print Label">
+            <span class="material-symbols-rounded">print</span>
+          </button>
+          <button id="modal-close" class="modal-close-btn" aria-label="Close" title="Close"
+            data-i18n-title="modal.close"><span class="material-symbols-rounded">close</span></button>
+        </div>
+      </div>
+      <div class="modal-body" id="modal-body-content" style="overflow-x: auto; padding: 12px 16px;">
+        <!-- Label rendered by labels.js / paneldetails.js -->
+      </div>
+      <div class="modal-footer">
+        <button id="modal-prev" class="modal-nav-btn" aria-label="Previous Panel" title="Previous Panel"
+          data-i18n-title="modal.prev"><span class="material-symbols-rounded">arrow_back</span></button>
+        <button id="modal-next" class="modal-nav-btn" aria-label="Next Panel" title="Next Panel"
+          data-i18n-title="modal.next"><span class="material-symbols-rounded">arrow_forward</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Print progress overlay -->
+  <div id="print-overlay"
+    style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.55);
+           align-items:center;justify-content:center;flex-direction:column;gap:14px;color:#fff;
+           font-family:inherit;font-size:1.1rem;">
+    <span class="material-symbols-rounded" style="font-size:48px;animation:spin 1s linear infinite;">autorenew</span>
+    <span id="print-overlay-msg" data-i18n="pdf.loading">Generating PDF…</span>
+  </div>
+  <style>
+    @keyframes spin { to { transform:rotate(360deg); } }
+  </style>
+
+  <script charset="UTF-8" src="../JS/avl-report_units.js"></script>
+  <script charset="UTF-8" src="../JS/avl-report_csv.js"></script>
+  <script charset="UTF-8" src="../JS/avl-report_offline-export.js"></script>
+  <script charset="UTF-8" src="../JS/avl-report_lang.js"></script>
+  <script charset="UTF-8" src="../JS/avl-report_script.js"></script>
+  <script charset="UTF-8" src="../JS/avl-report_labels.js"></script>
+  <script charset="UTF-8" src="../JS/avl-report_programs-table.js"></script>
+  <script charset="UTF-8" src="../JS/avl-report_panel-table.js"></script>
+  <script charset="UTF-8" src="../JS/avl-report_paneldetails.js"></script>
+</body>
+
+</html>

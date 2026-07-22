@@ -1,0 +1,81 @@
+/* avl-report_colors.css — Centralized color variables */
+
+:root {
+  /* Light theme variables */
+  --color-text-primary: #000000;
+  --color-text-placeholder: #0099d9;
+  /* AV-Line Blau */
+  --color-text-secondary: #666666;
+  /* Added for dashboard */
+  --color-bg-primary: #f5f5f5;
+  --color-bg-secondary: #eaeaea;
+  --color-bg-sidebar: #f5f5f5;
+  --color-border-hr: #0099d9;
+  --color-hover-primary: #0099d9;
+  --color-hover-secondary: #dcdcdc;
+  --color-active-primary: #0099d9;
+
+  /* Shadows */
+  --color-shadow: rgba(0, 0, 0, 0.05);
+  --color-shadow-hover: rgba(0, 0, 0, 0.15);
+  --color-shadow-popup: rgba(0, 0, 0, 0.35);
+
+  /* Special / Specific Colors */
+  --color-overlay-bg: rgba(0, 0, 0, 0.5);
+  --color-overlay-mobile: rgba(0, 0, 0, 0.6);
+  --color-done-bg: #C6EFCE;
+  --color-done-text: #000000;
+
+  /* Selection / Highlighting */
+  --color-sel-bg: rgba(0, 153, 217, 0.1);
+  --color-sel-border: rgba(0, 153, 217, 0.3);
+  --color-sel-row-bg: rgba(0, 153, 217, 0.14);
+  --color-sel-row-hover: rgba(0, 153, 217, 0.22);
+  --color-sel-row-border: rgba(0, 153, 217, 0.5);
+  --color-focus-ring: rgba(0, 153, 217, 0.2);
+
+  /* Cabinet Color Palette */
+  --color-cab-0: #3B82F6;
+  --color-cab-1: #10B981;
+  --color-cab-2: #F59E0B;
+  --color-cab-3: #EF4444;
+  --color-cab-4: #8B5CF6;
+  --color-cab-5: #06B6D4;
+  --color-cab-6: #F97316;
+  --color-cab-7: #EC4899;
+  --color-cab-8: #84CC16;
+  --color-cab-9: #14B8A6;
+  --color-cab-10: #A855F7;
+  --color-cab-11: #6366F1;
+  --color-cab-12: #F43F5E;
+  --color-cab-13: #0EA5E9;
+  --color-cab-14: #D97706;
+  --color-cab-nocab: #9ca3af;
+
+  /* Component Breakdown Donut Colors */
+  --color-donut-production: #0099d9; /* CI Blue */
+  --color-donut-cabinets: #3B82F6;
+  --color-donut-bigparts: #10B981;
+  --color-donut-laminates: #8B5CF6;
+  --color-donut-programs: #06B6D4;
+  --color-donut-fittings: #EC4899;
+  --color-donut-purchase: #84CC16;
+}
+
+body.dark-theme {
+  /* Dark theme overrides */
+  --color-text-primary: #f5f5f5;
+  --color-text-placeholder: #0099d9;
+  --color-text-secondary: #999999;
+  --color-bg-primary: #121212;
+  --color-bg-secondary: #2a2a2a;
+  --color-bg-sidebar: #222222;
+  --color-cab-nocab: #4b5563;
+  --color-border-hr: #0099d9;
+  --color-hover-primary: #0099d9;
+  --color-hover-secondary: #333333;
+  --color-active-primary: #0099d9;
+
+  --color-shadow: rgba(0, 0, 0, 0.3);
+  --color-shadow-hover: rgba(0, 0, 0, 0.5);
+}

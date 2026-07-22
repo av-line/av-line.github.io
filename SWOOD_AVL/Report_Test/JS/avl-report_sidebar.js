@@ -246,3 +246,161 @@ if (!window.AVL_OFFLINE_MODE && !document.querySelector('aside.sidebar')) {
     }
   });
 })();
+
+// ── Online SPA View Switcher ────────────────────────────────────────────────
+(function() {
+    if (window.AVL_OFFLINE_MODE) return;
+
+    const views = ['overview', 'panels', 'cabinets', 'bigparts', 'laminates', 'cutting', 'programs', 'fittings', 'purchase', 'summary'];
+    const loadedViews = new Set(['overview']);
+
+    function ensureOverviewSection() {
+        const mainContent = document.querySelector('.main-content');
+        if (!mainContent) return;
+        if (!document.getElementById('view-overview')) {
+            const overviewSec = document.createElement('section');
+            overviewSec.id = 'view-overview';
+            overviewSec.className = 'report-view';
+            overviewSec.style.display = 'flex';
+            overviewSec.style.flexDirection = 'column';
+            overviewSec.style.height = '100%';
+            
+            while (mainContent.firstChild) {
+                overviewSec.appendChild(mainContent.firstChild);
+            }
+            mainContent.appendChild(overviewSec);
+        }
+    }
+
+    async function loadSubpageView(viewId) {
+        const mainContent = document.querySelector('.main-content');
+        if (!mainContent) return;
+
+        let sec = document.getElementById('view-' + viewId);
+        if (!sec) {
+            sec = document.createElement('section');
+            sec.id = 'view-' + viewId;
+            sec.className = 'report-view';
+            sec.style.display = 'none';
+            sec.style.flexDirection = 'column';
+            sec.style.height = '100%';
+            sec.style.padding = '20px';
+            sec.style.boxSizing = 'border-box';
+            mainContent.appendChild(sec);
+
+            try {
+                const fetchUrl = `${htmlPrefix}${viewId}.html`;
+                const response = await fetch(fetchUrl);
+                if (response.ok) {
+                    const htmlText = await response.text();
+                    
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(htmlText, 'text/html');
+                    const subMain = doc.querySelector('.main-content');
+                    if (subMain) {
+                        sec.innerHTML = subMain.innerHTML;
+                    } else {
+                        sec.innerHTML = doc.body ? doc.body.innerHTML : htmlText;
+                    }
+
+                    const subModal = doc.querySelector('#panel-modal');
+                    if (subModal && !document.getElementById('panel-modal')) {
+                        sec.appendChild(subModal.cloneNode(true));
+                    }
+
+                    if (window.AVL_LANG && window.AVL_LANG.translateDOM) {
+                        window.AVL_LANG.translateDOM();
+                    }
+                    loadedViews.add(viewId);
+                } else {
+                    sec.innerHTML = `<div style="padding:40px;color:red;">Failed to load view: ${viewId}</div>`;
+                }
+            } catch(e) {
+                console.error('Error fetching view:', viewId, e);
+                sec.innerHTML = `<div style="padding:40px;color:red;">Error loading view ${viewId}</div>`;
+            }
+        }
+    }
+
+    async function showView(viewId) {
+        if (!views.includes(viewId)) viewId = 'overview';
+        ensureOverviewSection();
+
+        if (viewId !== 'overview' && !loadedViews.has(viewId)) {
+            await loadSubpageView(viewId);
+        }
+
+        views.forEach(v => {
+            const sec = document.getElementById('view-' + v);
+            if (sec) {
+                if (v === viewId) {
+                    sec.style.display = 'flex';
+                    sec.style.flexDirection = 'column';
+                    sec.style.height = '100%';
+                } else {
+                    sec.style.display = 'none';
+                }
+            }
+
+            const navEl = document.querySelector('[data-nav-id="' + v + '"]');
+            if (navEl) {
+                const link = navEl.querySelector('.menu-link');
+                if (link) {
+                    if (v === viewId) link.classList.add('active');
+                    else link.classList.remove('active');
+                }
+            }
+        });
+
+        window.dispatchEvent(new CustomEvent('avl:viewChanged', { detail: { view: viewId } }));
+
+        function safeRedrawView(vid) {
+            try {
+                const activeSec = document.getElementById('view-' + vid);
+                if (activeSec && typeof Tabulator !== 'undefined' && Tabulator.findTable) {
+                    const containers = activeSec.querySelectorAll('.tabulator, [id^="data-table"], #panels-table, #cabinets-table, #bigparts-table, #laminates-table, #cutting-table, #programs-table, #fittings-table, #purchase-table, #bp-summary-table, #detail-smallparts-table');
+                    containers.forEach(el => {
+                        if (el.offsetParent !== null) {
+                            const tbls = Tabulator.findTable(el);
+                            if (tbls && tbls.length > 0) {
+                                const tbl = tbls[0];
+                                const cols = tbl.getColumnDefinitions();
+                                if (cols && cols.length > 0) tbl.setColumns(cols);
+                                else tbl.redraw(true);
+                            }
+                        }
+                    });
+                }
+            } catch(e) {}
+        }
+        requestAnimationFrame(() => {
+            setTimeout(() => safeRedrawView(viewId), 150);
+            setTimeout(() => safeRedrawView(viewId), 500);
+        });
+    }
+
+    function bindSidebarNavigation() {
+        document.querySelectorAll('.sidebar [data-nav-id]').forEach(item => {
+            const navId = item.getAttribute('data-nav-id');
+            const link = item.querySelector('.menu-link');
+            if (link) {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    showView(navId);
+                });
+            }
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            ensureOverviewSection();
+            bindSidebarNavigation();
+        });
+    } else {
+        ensureOverviewSection();
+        bindSidebarNavigation();
+    }
+
+    window.AVL_SHOW_VIEW = showView;
+})();

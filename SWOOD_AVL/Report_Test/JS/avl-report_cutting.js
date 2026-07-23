@@ -759,9 +759,11 @@ function attachZoomControls(W, H) {
 function populateCabinets() {
     const sel = document.getElementById('cab-select');
     if (!sel || typeof reportData === 'undefined' || !reportData.Project) return;
-    const cabs = Array.isArray(reportData.Project.CABINET) ? reportData.Project.CABINET : [reportData.Project.CABINET];
+    const getArray = (v) => (!v ? [] : Array.isArray(v) ? v : [v]);
+    const cabs = getArray(reportData.Project.CABINET);
     let html = `<option value="ALL" data-i18n="cut.ctrl.cab.all">ALL Cabinets</option>`;
     cabs.forEach((c, ci) => {
+        if (!c) return;
         const nr = c.SNR_CAB || `${ci+1}`;
         const desc = c.DESCRIPTION_CAB ? ` \u2014 ${c.DESCRIPTION_CAB}` : '';
         html += `<option value="${ci}">${esc(nr)}${esc(desc)}</option>`;
@@ -780,7 +782,11 @@ function populateMaterials(){
     const map={}; getAllParts().forEach(p=>{ if(p.PAN_MATREF&&!map[p.PAN_MATREF]) map[p.PAN_MATREF]=p.PAN_MATDESC||p.PAN_MATREF; });
     const currentVal = sel.value;
     sel.innerHTML=Object.entries(map).map(([r,d])=>`<option value="${esc(r)}">${esc(r)} \u2014 ${esc(d)}</option>`).join('');
-    if (map[currentVal]) sel.value = currentVal;
+    if (map[currentVal]) {
+        sel.value = currentVal;
+    } else if (sel.options.length > 0) {
+        sel.selectedIndex = 0;
+    }
     updateGrainVis();
 }
 function updateGrainVis() {

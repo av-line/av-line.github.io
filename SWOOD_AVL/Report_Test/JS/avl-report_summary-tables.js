@@ -118,56 +118,7 @@ function initSummaryTables() {
             });
             console.log("[DEBUG] Total bigPartFilenames size:", bigPartFilenames.size);
 
-            const allParts = [];
-            getArray(reportData.Project.INTERNALPRODUCTION).forEach(pan => {
-                const fn = (pan.FILENAME || "").trim().toUpperCase();
-                const isSmall = smallPartSet.has(fn);
-                const isBig = bigPartFilenames.has(fn);
-                
-                if (pan.PAN_LAMTOP_MATREF === "FU_LA_G_1" || pan.PAN_LAMBOT_MATREF === "FU_LA_G_1") {
-                    console.log("[DEBUG] Evaluating part:", pan.FILENAME, pan.DESCRIPTION, "isSmall:", isSmall, "isBig:", isBig);
-                }
-
-                if (!isSmall && !isBig) {
-                    allParts.push(pan);
-                }
-            });
-
-            getArray(reportData.Project.BIGPART).forEach(bp => {
-                allParts.push({
-                    QTY: parseFloat(bp.QUANTITY || bp.QTY || 1),
-                    PAN_MATREF: bp.BP_MATREF,
-                    PAN_MATDESC: bp.BP_MATDESC || bp.BP_MATREF,
-                    PAN_MAT_T: bp.BP_T,
-                    PAN_LWEB: bp.BP_L,
-                    PAN_WWEB: bp.BP_W,
-                    PAN_STL: bp.BP_L,
-                    PAN_STW: bp.BP_W,
-                    PAN_MATCOSTTYPE: bp.BP_MATCOSTTYPE || "1",
-                    PAN_MATCOSTFACTOR: bp.BP_MATCOSTFACTOR || "1",
-                    
-                    PAN_LAMTOP_MATREF: bp.BP_LAMTOP,
-                    PAN_LAMTOP_DESC: bp.BP_LAMTOP_DESC || bp.BP_LAMTOP || "",
-                    PAN_LAMTOP_ST_T: bp.BP_LAMTOP_ST_T || "0",
-                    PAN_LAMTOP_ST_L: bp.BP_L,
-                    PAN_LAMTOP_ST_W: bp.BP_W,
-                    PAN_LAMTOP_MATCOSTTYPE: bp.BP_LAMTOP_MATCOSTTYPE || "1",
-                    PAN_LAMTOP_MATCOSTFACTOR: bp.BP_LAMTOP_MATCOSTFACTOR || "1",
-                    
-                    PAN_LAMBOT_MATREF: bp.BP_LAMBOT,
-                    PAN_LAMBOT_DESC: bp.BP_LAMBOT_DESC || bp.BP_LAMBOT || "",
-                    PAN_LAMBOT_ST_T: bp.BP_LAMBOT_ST_T || "0",
-                    PAN_LAMBOT_ST_L: bp.BP_L,
-                    PAN_LAMBOT_ST_W: bp.BP_W,
-                    PAN_LAMBOT_MATCOSTTYPE: bp.BP_LAMBOT_MATCOSTTYPE || "1",
-                    PAN_LAMBOT_MATCOSTFACTOR: bp.BP_LAMBOT_MATCOSTFACTOR || "1",
-                    
-                    PAN_EBL_NAME: "",
-                    PAN_EBR_NAME: "",
-                    PAN_EBF_NAME: "",
-                    PAN_EBB_NAME: ""
-                });
-            });
+            const allParts = [...getArray(reportData.Project.INTERNALPRODUCTION)];
 
             allParts.forEach(pan => {
                         

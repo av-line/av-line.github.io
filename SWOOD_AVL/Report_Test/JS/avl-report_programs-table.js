@@ -31,79 +31,74 @@
     }
     const doneSet = loadDone();
 
+    function getFlatPrograms() {
+        const getArray = (v) => (!v ? [] : Array.isArray(v) ? v : [v]);
+        const flatPrograms = [];
 
-    const getArray = (v) => {
-        if (!v) return [];
-        if (Array.isArray(v)) return v;
-        if (typeof v === 'object') return [v];
-        return [];
-    };
-    const flatPrograms = [];
+        if (typeof reportData !== 'undefined' && reportData && reportData.Project && reportData.Project.INTERNALPRODUCTION) {
+            const proj = reportData.Project;
 
-    if (typeof reportData !== 'undefined' && reportData.Project && reportData.Project.INTERNALPRODUCTION) {
-        const proj = reportData.Project;
+            // Build SNR_CAB → { cabIdx, cab } lookup
+            const cabBySNR = {};
+            const cabinets = getArray(proj.CABINET);
+            if (cabinets.length > 0) {
+                const sortedCabs = [...cabinets];
+                sortedCabs.sort((a, b) => {
+                    const valA = a.SNR_CAB === 'No CAB' ? 'ZZZZZ' : (a.SNR_CAB || 'No CAB');
+                    const valB = b.SNR_CAB === 'No CAB' ? 'ZZZZZ' : (b.SNR_CAB || 'No CAB');
+                    return String(valA).localeCompare(String(valB), undefined, { numeric: true });
+                });
+                sortedCabs.forEach((cab, cabIdx) => { if (cab.SNR_CAB) cabBySNR[cab.SNR_CAB] = { cabIdx, cab }; });
+            }
 
-        // Build SNR_CAB → { cabIdx, cab } lookup
-        const cabBySNR = {};
-        const cabinets = getArray(proj.CABINET);
-        if (cabinets.length > 0) {
-            const sortedCabs = [...cabinets];
-            // Sort cabinets by SNR_CAB for consistent color indexing
-            sortedCabs.sort((a, b) => {
-                const valA = a.SNR_CAB === 'No CAB' ? 'ZZZZZ' : (a.SNR_CAB || 'No CAB');
-                const valB = b.SNR_CAB === 'No CAB' ? 'ZZZZZ' : (b.SNR_CAB || 'No CAB');
-                return String(valA).localeCompare(String(valB), undefined, { numeric: true });
-            });
-            sortedCabs.forEach((cab, cabIdx) => { if (cab.SNR_CAB) cabBySNR[cab.SNR_CAB] = { cabIdx, cab }; });
-        }
+            const parts = getArray(proj.INTERNALPRODUCTION);
+            parts.forEach(part => {
+                const programs = getArray(part.PROGRAMS);
+                programs.forEach(prog => {
+                    if (!prog.PROG_FILENAME || !prog.PROG_FILENAME.trim()) return;
 
-        const parts = getArray(proj.INTERNALPRODUCTION);
-        parts.forEach(part => {
-            const programs = getArray(part.PROGRAMS);
-            programs.forEach(prog => {
-                if (!prog.PROG_FILENAME || !prog.PROG_FILENAME.trim()) return;
+                    const snr = part.SNR_CAB || '';
+                    const cabInfo = snr ? cabBySNR[snr] : null;
+                    const cabIdx  = cabInfo ? cabInfo.cabIdx : -1;
+                    const cab     = cabInfo ? cabInfo.cab    : null;
 
-                const snr = part.SNR_CAB || '';
-                const cabInfo = snr ? cabBySNR[snr] : null;
-                const cabIdx  = cabInfo ? cabInfo.cabIdx : -1;
-                const cab     = cabInfo ? cabInfo.cab    : null;
-                if (!cabInfo) part.SNR_CAB = "No CAB";
+                    const uid = `${part.FILENAME}__${prog.PROG_FILENAME}`;
 
-                const uid = `${part.FILENAME}__${prog.PROG_FILENAME}`;
+                    // Tools by number, spindles by number
+                    const tools = getArray(prog.TOOLS);
+                    const spindles = getArray(prog.SPINDLES);
+                    const toolStrs = [
+                        ...tools.map(t => t.TOOL_NUMBER ? `T${t.TOOL_NUMBER}` : '').filter(Boolean),
+                        ...spindles.map(s => s.SPINDLE_NUMBER ? `S${s.SPINDLE_NUMBER}` : '').filter(Boolean)
+                    ];
 
-                // Tools by number, spindles by number
-                const tools = getArray(prog.TOOLS);
-                const spindles = getArray(prog.SPINDLES);
-                const toolStrs = [
-                    ...tools.map(t => t.TOOL_NUMBER ? `T${t.TOOL_NUMBER}` : '').filter(Boolean),
-                    ...spindles.map(s => s.SPINDLE_NUMBER ? `S${s.SPINDLE_NUMBER}` : '').filter(Boolean)
-                ];
+                    flatPrograms.push({
+                        _uid: uid,
+                        _cabIdx: cabIdx,
+                        _cabDesc: cab ? (cab.DESCRIPTION_CAB || '') : '',
+                        _partData: part,
 
-                flatPrograms.push({
-                    _uid: uid,
-                    _cabIdx: cabIdx,
-                    _cabDesc: cab ? (cab.DESCRIPTION_CAB || '') : '',
-                    _partData: part,
+                        SNR_CAB: part.SNR_CAB || '—',
+                        SNR_CABList: part.SNR_CABList || '—',
+                        DESCRIPTION: part.DESCRIPTION || '—',
+                        FILENAME: part.FILENAME || '—',
+                        PAN_MATREF: part.PAN_MATREF || '—',
+                        PAN_LWEB: part.PAN_LWEB || '—',
+                        PAN_WWEB: part.PAN_WWEB || '—',
+                        LABEL_IMG_BASE64: part.LABEL_IMG_BASE64 || null,
 
-                    SNR_CAB: part.SNR_CAB || '—',
-                    SNR_CABList: part.SNR_CABList || '—',
-                    DESCRIPTION: part.DESCRIPTION || '—',
-                    FILENAME: part.FILENAME || '—',
-                    PAN_MATREF: part.PAN_MATREF || '—',
-                    PAN_LWEB: part.PAN_LWEB || '—',
-                    PAN_WWEB: part.PAN_WWEB || '—',
-                    LABEL_IMG_BASE64: part.LABEL_IMG_BASE64 || null,
+                        PROG_FILENAME: prog.PROG_FILENAME || '—',
+                        PROG_PHASENAME: prog.PROG_PHASENAME || '—',
+                        PROG_COMMENT: prog.PROG_COMMENT || '',
+                        PROG_TIME: prog.PROG_TIME != null ? prog.PROG_TIME : '—',
+                        PROG_TOOLS: toolStrs.join(', ') || '—',
 
-                    PROG_FILENAME: prog.PROG_FILENAME || '—',
-                    PROG_PHASENAME: prog.PROG_PHASENAME || '—',
-                    PROG_COMMENT: prog.PROG_COMMENT || '',
-                    PROG_TIME: prog.PROG_TIME != null ? prog.PROG_TIME : '—',
-                    TOOLS_STR: toolStrs.join(', ') || '—',
-
-                    done: doneSet.has(uid)
+                        done: doneSet.has(uid)
+                    });
                 });
             });
-        });
+        }
+        return flatPrograms;
     }
 
     // ── Tabulator reference ───────────────────────────────────────────────────────
@@ -362,7 +357,7 @@
         }
 
         tableRef = new Tabulator(tableEl, {
-            data: flatPrograms,
+            data: getFlatPrograms(),
             layout: 'fitColumns',
             height: '100%',
             initialSort: [

@@ -177,6 +177,12 @@ const sidebarHTML = `
       </ul>
     </div>
 
+    <div class="sidebar-save-container" style="padding: 8px 18px; border-top: 1px solid var(--color-border-hr); display: flex; align-items: center; justify-content: center;">
+      <button class="save-state-btn offline-export-btn" id="save-state-btn" aria-label="Save progress" data-i18n-aria="ui.save.label" data-i18n-title="ui.save.tooltip" title="Save progress" style="width: 40px; height: 40px; border-radius: 8px; border: none; background: var(--color-bg-secondary); color: var(--color-text-primary); cursor: pointer; display: flex; align-items: center; justify-content: center;">
+        <span class="material-symbols-rounded" aria-hidden="true" style="color: #28a745;">save</span>
+      </button>
+    </div>
+
     <div class="sidebar-footer">
       <button class="lang-toggle" aria-label="Language" data-i18n-aria="ui.lang" data-i18n-title="ui.lang" title="Language">
         <span class="material-symbols-rounded" aria-hidden="true">language</span>

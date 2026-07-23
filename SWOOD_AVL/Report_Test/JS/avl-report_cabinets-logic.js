@@ -420,6 +420,7 @@ function initCabinetsLogic() {
         });
     }
 }
+window.initCabinetsLogic = initCabinetsLogic;
 document.addEventListener("DOMContentLoaded", initCabinetsLogic);
 window.addEventListener("avl:viewChanged", function(e) {
     if (e.detail && e.detail.view === 'cabinets') initCabinetsLogic();

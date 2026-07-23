@@ -859,6 +859,7 @@ function initCuttingLogic() {
     document.querySelectorAll('.grain-btn').forEach(b=>b.addEventListener('click',()=>{ document.querySelectorAll('.grain-btn').forEach(x=>x.classList.remove('active')); b.classList.add('active'); }));
     document.getElementById('optimize-btn')?.addEventListener('click', optimize);
 }
+window.initCuttingLogic = initCuttingLogic;
 document.addEventListener('DOMContentLoaded', initCuttingLogic);
 window.addEventListener('avl:viewChanged', (e) => {
     if (e.detail && e.detail.view === 'cutting') initCuttingLogic();

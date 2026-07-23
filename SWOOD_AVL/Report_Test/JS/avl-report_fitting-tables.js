@@ -299,6 +299,7 @@ function initFittingTables() {
         updateItemCount();
     });
 }
+window.initFittingTables = initFittingTables;
 document.addEventListener("DOMContentLoaded", initFittingTables);
 window.addEventListener("avl:viewChanged", function(e) {
     if (e.detail && e.detail.view === 'fittings') initFittingTables();

@@ -649,6 +649,7 @@
         }
 
     } // initLaminatesTable
+    window.initLaminatesTable = initLaminatesTable;
     document.addEventListener('DOMContentLoaded', initLaminatesTable);
     window.addEventListener('avl:viewChanged', function(e) {
         if (e.detail && e.detail.view === 'laminates') initLaminatesTable();

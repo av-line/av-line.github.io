@@ -168,6 +168,13 @@
         } catch (e) { /* non-critical */ }
     }
 
+    // ── Global Click listener for save-state button ────────────────────────────────
+    document.addEventListener('click', function (e) {
+        if (e.target.closest('#save-state-btn') || e.target.closest('.save-state-btn')) {
+            download();
+        }
+    });
+
     // ── On load: show existing saved-date from file (if any) ────────────────────────
     document.addEventListener('DOMContentLoaded', function () {
         if (typeof reportData === 'undefined') return;

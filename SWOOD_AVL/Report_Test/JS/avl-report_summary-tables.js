@@ -132,24 +132,25 @@ function initSummaryTables() {
                             const stt = parseFloat(pan.PAN_MAT_T) || 0;
                             const costType = pan.PAN_MATCOSTTYPE;
                             const costFactor = useFactor ? (parseFloat(pan.PAN_MATCOSTFACTOR) || 1) : 1;
+                            const isImpSource = window.AVL_UNITS && window.AVL_UNITS.getSourceFormat() !== 'metric';
                             
                             let qty = 0;
                             let unit = "";
                             
-                            // Type 0 is m³, Type 1 is m², Type 2 is lm, Type 3 is pc. Using type 1 as default
+                            // Type 0 is m³/ft³, Type 1 is m²/ft², Type 2 is lm/LF, Type 3 is pc. Using type 1 as default
                             if (costType === "0") {
-                                qty = (lweb * wweb * stt) / 1000000000;
-                                unit = "m³";
+                                qty = isImpSource ? (lweb * wweb * stt) / 1728 : (lweb * wweb * stt) / 1000000000;
+                                unit = isImpSource ? "ft³" : "m³";
                             } else if (costType === "2") {
                                 const stl = parseFloat(pan.PAN_STL) || 0;
-                                qty = stl / 1000;
-                                unit = "lm";
+                                qty = isImpSource ? stl / 12 : stl / 1000;
+                                unit = isImpSource ? "LF" : "lm";
                             } else if (costType === "3") {
                                 qty = 1;
                                 unit = "pc";
                             } else {
-                                qty = (lweb * wweb) / 1000000;
-                                unit = "m²";
+                                qty = isImpSource ? (lweb * wweb) / 144 : (lweb * wweb) / 1000000;
+                                unit = isImpSource ? "ft²" : "m²";
                             }
                             
                             qty = qty * costFactor * parseFloat(pan.QTY || pan.QUANTITY || 1);
@@ -167,6 +168,7 @@ function initSummaryTables() {
                         }
                         
                         // --- Handle Edgeband ---
+                        const isImpSource = window.AVL_UNITS && window.AVL_UNITS.getSourceFormat() !== 'metric';
                         const edges = [
                             { name: pan.PAN_EBL_NAME, desc: pan.PAN_EBL_MATREF, t: pan.PAN_EBL_T, lstock: parseFloat(pan.PAN_EBL_LSTOCK) || 0 },
                             { name: pan.PAN_EBR_NAME, desc: pan.PAN_EBR_MATREF, t: pan.PAN_EBR_T, lstock: parseFloat(pan.PAN_EBR_LSTOCK) || 0 },
@@ -176,7 +178,7 @@ function initSummaryTables() {
                         
                         edges.forEach(edge => {
                             if (edge.name) {
-                                const lm = (edge.lstock / 1000) * parseFloat(pan.QTY || pan.QUANTITY || 1);
+                                const lm = (isImpSource ? edge.lstock / 12 : edge.lstock / 1000) * parseFloat(pan.QTY || pan.QUANTITY || 1);
                                 const desc = edge.desc || "";
                                 const t = edge.t || "";
                                 const key = `${edge.name}_${desc}_${t}`;
@@ -186,6 +188,7 @@ function initSummaryTables() {
                                         'EB REF': edge.name,
                                         'EB Description': desc,
                                         'EB Thickness': t,
+                                        'UNIT': isImpSource ? 'LF' : 'lm',
                                         'SUMMARY': 0
                                     };
                                 }
@@ -214,17 +217,17 @@ function initSummaryTables() {
                                 let stt = parseFloat(lam.t) || 0;
 
                                 if (lam.type === "0") {
-                                    qty = (lam.l * lam.w * stt) / 1000000000;
-                                    unit = "m³";
+                                    qty = isImpSource ? (lam.l * lam.w * stt) / 1728 : (lam.l * lam.w * stt) / 1000000000;
+                                    unit = isImpSource ? "ft³" : "m³";
                                 } else if (lam.type === "2") {
-                                    qty = lam.l / 1000;
-                                    unit = "lm";
+                                    qty = isImpSource ? lam.l / 12 : lam.l / 1000;
+                                    unit = isImpSource ? "LF" : "lm";
                                 } else if (lam.type === "3") {
                                     qty = 1;
                                     unit = "pc";
                                 } else {
-                                    qty = (lam.l * lam.w) / 1000000;
-                                    unit = "m²";
+                                    qty = isImpSource ? (lam.l * lam.w) / 144 : (lam.l * lam.w) / 1000000;
+                                    unit = isImpSource ? "ft²" : "m²";
                                 }
                                 
                                 qty = qty * lam.factor * parseFloat(pan.QTY || pan.QUANTITY || 1);
@@ -480,6 +483,7 @@ function initSummaryTables() {
         }
     });
 }
+window.initSummaryTables = initSummaryTables;
 document.addEventListener("DOMContentLoaded", initSummaryTables);
 window.addEventListener("avl:viewChanged", function(e) {
     if (e.detail && e.detail.view === 'summary') initSummaryTables();

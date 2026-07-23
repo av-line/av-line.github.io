@@ -285,6 +285,7 @@ function initPurchaseTable() {
         updateItemCount();
     });
 }
+window.initPurchaseTable = initPurchaseTable;
 document.addEventListener("DOMContentLoaded", initPurchaseTable);
 window.addEventListener("avl:viewChanged", function(e) {
     if (e.detail && e.detail.view === 'purchase') initPurchaseTable();

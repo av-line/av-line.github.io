@@ -423,6 +423,7 @@ function initPanelTable() {
         }
     });
 }
+window.initPanelTable = initPanelTable;
 document.addEventListener("DOMContentLoaded", initPanelTable);
 window.addEventListener("avl:viewChanged", function(e) {
     if (e.detail && e.detail.view === 'panels') initPanelTable();

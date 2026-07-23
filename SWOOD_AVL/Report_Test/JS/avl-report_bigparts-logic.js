@@ -451,6 +451,7 @@ function initBigPartsLogic() {
         });
     }
 }
+window.initBigPartsLogic = initBigPartsLogic;
 document.addEventListener("DOMContentLoaded", initBigPartsLogic);
 window.addEventListener("avl:viewChanged", function(e) {
     if (e.detail && e.detail.view === 'bigparts') initBigPartsLogic();

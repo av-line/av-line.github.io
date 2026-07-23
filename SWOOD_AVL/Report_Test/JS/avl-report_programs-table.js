@@ -520,6 +520,7 @@
         });
 
     } // initProgramsTable
+    window.initProgramsTable = initProgramsTable;
     document.addEventListener('DOMContentLoaded', initProgramsTable);
     window.addEventListener('avl:viewChanged', function(e) {
         if (e.detail && e.detail.view === 'programs') initProgramsTable();

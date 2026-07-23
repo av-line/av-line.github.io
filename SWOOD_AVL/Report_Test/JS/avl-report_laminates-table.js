@@ -488,12 +488,11 @@
         });
     }
 
-    // ── DOMContentLoaded ─────────────────────────────────────────────────────────
-    document.addEventListener('DOMContentLoaded', function () {
-
+    function initLaminatesTable() {
         const viewSec = document.getElementById('view-laminates') || document;
         const tableEl = viewSec.querySelector('#data-table') || document.getElementById('laminates-table');
         if (!tableEl) return;
+        if (tableEl.classList.contains('tabulator') && tableEl.children.length > 0) return;
 
         if (typeof reportData === 'undefined') {
             tableEl.innerHTML =
@@ -647,11 +646,13 @@
             setEl('foot-projnr', prj.PRJ_NR);
             setEl('foot-eng', prj.ENGINEER);
             setEl('foot-projname', prj.PRJ_NAME);
-            setEl('foot-projpos', prj.PRJ_POSITION);
-            setEl('foot-report', (prj.REPORT_TYPE || '') + " | " + (prj.REPORT_VERSION || ''));
         }
 
-    }); // DOMContentLoaded
+    } // initLaminatesTable
+    document.addEventListener('DOMContentLoaded', initLaminatesTable);
+    window.addEventListener('avl:viewChanged', function(e) {
+        if (e.detail && e.detail.view === 'laminates') initLaminatesTable();
+    });
 
     // ── Helpers ───────────────────────────────────────────────────────────────────
     function toggleDropdown(btnId, menuId) {

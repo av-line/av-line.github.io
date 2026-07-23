@@ -1,5 +1,9 @@
-// Data processing and table initialization for Summary Report
-document.addEventListener("DOMContentLoaded", () => {
+function initSummaryTables() {
+    const viewSec = document.getElementById('view-summary') || document;
+    const tableEl = viewSec.querySelector('#material-summary-table') || document.getElementById('material-summary-table');
+    if (!tableEl) return;
+    if (tableEl.classList.contains('tabulator') && tableEl.children.length > 0) return;
+
     let materialTable, edgebandTable, laminateTable;
     window.summaryTables = [];
 
@@ -524,4 +528,8 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         }
     });
+}
+document.addEventListener("DOMContentLoaded", initSummaryTables);
+window.addEventListener("avl:viewChanged", function(e) {
+    if (e.detail && e.detail.view === 'summary') initSummaryTables();
 });

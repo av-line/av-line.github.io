@@ -13,8 +13,12 @@ function _cabDot(color, size) {
     return `<span style="display:inline-block;width:${s}px;height:${s}px;border-radius:2px;background:${color};flex-shrink:0;"></span>`;
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-    // 1. Populate Footer Metadata
+function initCabinetsLogic() {
+    const viewSec = document.getElementById('view-cabinets') || document;
+    const tableEl = viewSec.querySelector('#cabinets-table') || document.getElementById('cabinets-table');
+    if (!tableEl) return;
+    if (tableEl.classList.contains('tabulator') && tableEl.children.length > 0) return;
+
     const proj = (typeof reportData !== 'undefined' && reportData) ? reportData.Project : null;
     if (proj) {
         if (document.getElementById('foot-cus')) document.getElementById('foot-cus').innerText = proj.CUS_NAME || '';
@@ -415,4 +419,8 @@ document.addEventListener("DOMContentLoaded", () => {
             if (masterView) masterView.style.display = 'flex';
         });
     }
+}
+document.addEventListener("DOMContentLoaded", initCabinetsLogic);
+window.addEventListener("avl:viewChanged", function(e) {
+    if (e.detail && e.detail.view === 'cabinets') initCabinetsLogic();
 });

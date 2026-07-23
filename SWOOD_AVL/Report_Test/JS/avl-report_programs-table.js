@@ -349,12 +349,11 @@
         });
     }
 
-    // ── DOMContentLoaded ─────────────────────────────────────────────────────────
-    document.addEventListener('DOMContentLoaded', function () {
-
+    function initProgramsTable() {
         const viewSec = document.getElementById('view-programs') || document;
         const tableEl = viewSec.querySelector('#programs-table') || viewSec.querySelector('#data-table') || document.getElementById('programs-table');
         if (!tableEl) return;
+        if (tableEl.classList.contains('tabulator') && tableEl.children.length > 0) return;
 
         if (typeof reportData === 'undefined') {
             tableEl.innerHTML =
@@ -525,7 +524,11 @@
             if (!e.target.closest('#export-dropdown-wrap')) closeDropdown('export-menu', 'export-btn');
         });
 
-    }); // DOMContentLoaded
+    } // initProgramsTable
+    document.addEventListener('DOMContentLoaded', initProgramsTable);
+    window.addEventListener('avl:viewChanged', function(e) {
+        if (e.detail && e.detail.view === 'programs') initProgramsTable();
+    });
 
     // ── Helpers ───────────────────────────────────────────────────────────────────
     function toggleDropdown(btnId, menuId) {

@@ -303,10 +303,19 @@ if (!window.AVL_OFFLINE_MODE && !document.querySelector('aside.sidebar')) {
                         sec.innerHTML = doc.body ? doc.body.innerHTML : htmlText;
                     }
 
-                    const subModal = doc.querySelector('#panel-modal');
-                    if (subModal && !document.getElementById('panel-modal')) {
-                        sec.appendChild(subModal.cloneNode(true));
-                    }
+                    // Copy all <style> elements from fetched subpage into document.head
+                    doc.querySelectorAll('style').forEach(styleTag => {
+                        const cloned = styleTag.cloneNode(true);
+                        cloned.setAttribute('data-subpage-style', viewId);
+                        document.head.appendChild(cloned);
+                    });
+
+                    // Copy any modal dialogs (like #panel-modal, #program-modal, etc.)
+                    doc.querySelectorAll('.modal, [id$="-modal"]').forEach(modalEl => {
+                        if (modalEl.id && !document.getElementById(modalEl.id)) {
+                            document.body.appendChild(modalEl.cloneNode(true));
+                        }
+                    });
 
                     if (window.AVL_LANG && window.AVL_LANG.translateDOM) {
                         window.AVL_LANG.translateDOM();
@@ -329,6 +338,9 @@ if (!window.AVL_OFFLINE_MODE && !document.querySelector('aside.sidebar')) {
         if (viewId !== 'overview' && !loadedViews.has(viewId)) {
             await loadSubpageView(viewId);
         }
+
+        if (window.populateDocFooters) window.populateDocFooters();
+        if (window.AVL_LANG && window.AVL_LANG.translateDOM) window.AVL_LANG.translateDOM();
 
         views.forEach(v => {
             const sec = document.getElementById('view-' + v);

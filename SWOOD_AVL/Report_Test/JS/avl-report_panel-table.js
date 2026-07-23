@@ -12,12 +12,13 @@ function _panelCabDot(color) {
     return `<span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${color};flex-shrink:0;"></span>`;
 }
 
-document.addEventListener("DOMContentLoaded", function() {
+function initPanelTable() {
     if (typeof reportData === 'undefined') return;
 
     const viewSec = document.getElementById('view-panels') || document;
     const tableEl = viewSec.querySelector('#data-table') || document.getElementById('data-table');
     if (!tableEl) return;
+    if (tableEl.classList.contains('tabulator') && tableEl.children.length > 0) return;
 
     const getArray = (v) => {
         if (!v) return [];
@@ -421,4 +422,8 @@ document.addEventListener("DOMContentLoaded", function() {
             table.setColumns(getPanelColumns());
         }
     });
+}
+document.addEventListener("DOMContentLoaded", initPanelTable);
+window.addEventListener("avl:viewChanged", function(e) {
+    if (e.detail && e.detail.view === 'panels') initPanelTable();
 });

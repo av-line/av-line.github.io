@@ -1,10 +1,11 @@
-document.addEventListener("DOMContentLoaded", () => {
+function initPurchaseTable() {
     let purchaseTable;
     let rawData = [];
 
     const viewSec = document.getElementById('view-purchase') || document;
     const tableEl = viewSec.querySelector('#data-table') || document.getElementById('purchase-table');
     if (!tableEl) return;
+    if (tableEl.classList.contains('tabulator') && tableEl.children.length > 0) return;
 
     // ── Cabinet colour palette ────────────────────────────────────────────────────
     const COLORS = [
@@ -283,4 +284,8 @@ document.addEventListener("DOMContentLoaded", () => {
         if (purchaseTable) purchaseTable.setColumns(getColumns());
         updateItemCount();
     });
+}
+document.addEventListener("DOMContentLoaded", initPurchaseTable);
+window.addEventListener("avl:viewChanged", function(e) {
+    if (e.detail && e.detail.view === 'purchase') initPurchaseTable();
 });

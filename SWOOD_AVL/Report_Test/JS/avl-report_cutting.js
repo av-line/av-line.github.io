@@ -831,7 +831,14 @@ function updateCuttingUnitLabels() {
     _st.lastUnitFormat = currentFmt;
 }
 
-document.addEventListener('DOMContentLoaded',()=>{
+let _cuttingInited = false;
+function initCuttingLogic() {
+    const viewSec = document.getElementById('view-cutting') || document;
+    const cabSelect = viewSec.querySelector('#cab-select') || document.getElementById('cab-select');
+    if (!cabSelect) return;
+    if (_cuttingInited && cabSelect.children.length > 0) return;
+    _cuttingInited = true;
+
     // Restore cut-done state from embedded file snapshot (if tabledata.js was saved)
     if (window.AVL_SAVE) window.AVL_SAVE.restoreAll();
 
@@ -845,6 +852,11 @@ document.addEventListener('DOMContentLoaded',()=>{
     [lI,wI].forEach(e=>e?.addEventListener('input',()=>{ preset.value='custom'; }));
     document.querySelectorAll('.grain-btn').forEach(b=>b.addEventListener('click',()=>{ document.querySelectorAll('.grain-btn').forEach(x=>x.classList.remove('active')); b.classList.add('active'); }));
     document.getElementById('optimize-btn')?.addEventListener('click', optimize);
+}
+document.addEventListener('DOMContentLoaded', initCuttingLogic);
+window.addEventListener('avl:viewChanged', (e) => {
+    if (e.detail && e.detail.view === 'cutting') initCuttingLogic();
+});
 
     // Re-render dynamic content when language or unit changes
     window.addEventListener('avl:langChanged', () => {

@@ -31,74 +31,79 @@
     }
     const doneSet = loadDone();
 
-    function getFlatPrograms() {
-        const getArray = (v) => (!v ? [] : Array.isArray(v) ? v : [v]);
-        const flatPrograms = [];
 
-        if (typeof reportData !== 'undefined' && reportData && reportData.Project && reportData.Project.INTERNALPRODUCTION) {
-            const proj = reportData.Project;
+    const getArray = (v) => {
+        if (!v) return [];
+        if (Array.isArray(v)) return v;
+        if (typeof v === 'object') return [v];
+        return [];
+    };
+    const flatPrograms = [];
 
-            // Build SNR_CAB → { cabIdx, cab } lookup
-            const cabBySNR = {};
-            const cabinets = getArray(proj.CABINET);
-            if (cabinets.length > 0) {
-                const sortedCabs = [...cabinets];
-                sortedCabs.sort((a, b) => {
-                    const valA = a.SNR_CAB === 'No CAB' ? 'ZZZZZ' : (a.SNR_CAB || 'No CAB');
-                    const valB = b.SNR_CAB === 'No CAB' ? 'ZZZZZ' : (b.SNR_CAB || 'No CAB');
-                    return String(valA).localeCompare(String(valB), undefined, { numeric: true });
-                });
-                sortedCabs.forEach((cab, cabIdx) => { if (cab.SNR_CAB) cabBySNR[cab.SNR_CAB] = { cabIdx, cab }; });
-            }
+    if (typeof reportData !== 'undefined' && reportData.Project && reportData.Project.INTERNALPRODUCTION) {
+        const proj = reportData.Project;
 
-            const parts = getArray(proj.INTERNALPRODUCTION);
-            parts.forEach(part => {
-                const programs = getArray(part.PROGRAMS);
-                programs.forEach(prog => {
-                    if (!prog.PROG_FILENAME || !prog.PROG_FILENAME.trim()) return;
+        // Build SNR_CAB → { cabIdx, cab } lookup
+        const cabBySNR = {};
+        const cabinets = getArray(proj.CABINET);
+        if (cabinets.length > 0) {
+            const sortedCabs = [...cabinets];
+            // Sort cabinets by SNR_CAB for consistent color indexing
+            sortedCabs.sort((a, b) => {
+                const valA = a.SNR_CAB === 'No CAB' ? 'ZZZZZ' : (a.SNR_CAB || 'No CAB');
+                const valB = b.SNR_CAB === 'No CAB' ? 'ZZZZZ' : (b.SNR_CAB || 'No CAB');
+                return String(valA).localeCompare(String(valB), undefined, { numeric: true });
+            });
+            sortedCabs.forEach((cab, cabIdx) => { if (cab.SNR_CAB) cabBySNR[cab.SNR_CAB] = { cabIdx, cab }; });
+        }
 
-                    const snr = part.SNR_CAB || '';
-                    const cabInfo = snr ? cabBySNR[snr] : null;
-                    const cabIdx  = cabInfo ? cabInfo.cabIdx : -1;
-                    const cab     = cabInfo ? cabInfo.cab    : null;
+        const parts = getArray(proj.INTERNALPRODUCTION);
+        parts.forEach(part => {
+            const programs = getArray(part.PROGRAMS);
+            programs.forEach(prog => {
+                if (!prog.PROG_FILENAME || !prog.PROG_FILENAME.trim()) return;
 
-                    const uid = `${part.FILENAME}__${prog.PROG_FILENAME}`;
+                const snr = part.SNR_CAB || '';
+                const cabInfo = snr ? cabBySNR[snr] : null;
+                const cabIdx  = cabInfo ? cabInfo.cabIdx : -1;
+                const cab     = cabInfo ? cabInfo.cab    : null;
+                if (!cabInfo) part.SNR_CAB = "No CAB";
 
-                    // Tools by number, spindles by number
-                    const tools = getArray(prog.TOOLS);
-                    const spindles = getArray(prog.SPINDLES);
-                    const toolStrs = [
-                        ...tools.map(t => t.TOOL_NUMBER ? `T${t.TOOL_NUMBER}` : '').filter(Boolean),
-                        ...spindles.map(s => s.SPINDLE_NUMBER ? `S${s.SPINDLE_NUMBER}` : '').filter(Boolean)
-                    ];
+                const uid = `${part.FILENAME}__${prog.PROG_FILENAME}`;
 
-                    flatPrograms.push({
-                        _uid: uid,
-                        _cabIdx: cabIdx,
-                        _cabDesc: cab ? (cab.DESCRIPTION_CAB || '') : '',
-                        _partData: part,
+                // Tools by number, spindles by number
+                const tools = getArray(prog.TOOLS);
+                const spindles = getArray(prog.SPINDLES);
+                const toolStrs = [
+                    ...tools.map(t => t.TOOL_NUMBER ? `T${t.TOOL_NUMBER}` : '').filter(Boolean),
+                    ...spindles.map(s => s.SPINDLE_NUMBER ? `S${s.SPINDLE_NUMBER}` : '').filter(Boolean)
+                ];
 
-                        SNR_CAB: part.SNR_CAB || '—',
-                        SNR_CABList: part.SNR_CABList || '—',
-                        DESCRIPTION: part.DESCRIPTION || '—',
-                        FILENAME: part.FILENAME || '—',
-                        PAN_MATREF: part.PAN_MATREF || '—',
-                        PAN_LWEB: part.PAN_LWEB || '—',
-                        PAN_WWEB: part.PAN_WWEB || '—',
-                        LABEL_IMG_BASE64: part.LABEL_IMG_BASE64 || null,
+                flatPrograms.push({
+                    _uid: uid,
+                    _cabIdx: cabIdx,
+                    _cabDesc: cab ? (cab.DESCRIPTION_CAB || '') : '',
+                    _partData: part,
 
-                        PROG_FILENAME: prog.PROG_FILENAME || '—',
-                        PROG_PHASENAME: prog.PROG_PHASENAME || '—',
-                        PROG_COMMENT: prog.PROG_COMMENT || '',
-                        PROG_TIME: prog.PROG_TIME != null ? prog.PROG_TIME : '—',
-                        PROG_TOOLS: toolStrs.join(', ') || '—',
+                    SNR_CAB: part.SNR_CAB || '—',
+                    SNR_CABList: part.SNR_CABList || '—',
+                    DESCRIPTION: part.DESCRIPTION || '—',
+                    FILENAME: part.FILENAME || '—',
+                    PAN_MATREF: part.PAN_MATREF || '—',
+                    PAN_LWEB: part.PAN_LWEB || '—',
+                    PAN_WWEB: part.PAN_WWEB || '—',
+                    LABEL_IMG_BASE64: part.LABEL_IMG_BASE64 || null,
 
-                        done: doneSet.has(uid)
-                    });
+                    PROG_FILENAME: prog.PROG_FILENAME || '—',
+                    PROG_PHASENAME: prog.PROG_PHASENAME || '—',
+                    PROG_COMMENT: prog.PROG_COMMENT || '',
+                    PROG_TIME: prog.PROG_TIME != null ? prog.PROG_TIME : '—',
+                    TOOLS_STR: toolStrs.join(', ') || '—',
+
+                    done: doneSet.has(uid)
                 });
             });
-        }
-        return flatPrograms;
+        });
     }
 
     // ── Tabulator reference ───────────────────────────────────────────────────────
@@ -344,11 +349,12 @@
         });
     }
 
-    function initProgramsTable() {
+    // ── DOMContentLoaded ─────────────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', function () {
+
         const viewSec = document.getElementById('view-programs') || document;
         const tableEl = viewSec.querySelector('#programs-table') || viewSec.querySelector('#data-table') || document.getElementById('programs-table');
         if (!tableEl) return;
-        if (tableEl.classList.contains('tabulator') && tableEl.children.length > 0) return;
 
         if (typeof reportData === 'undefined') {
             tableEl.innerHTML =
@@ -357,7 +363,7 @@
         }
 
         tableRef = new Tabulator(tableEl, {
-            data: getFlatPrograms(),
+            data: flatPrograms,
             layout: 'fitColumns',
             height: '100%',
             initialSort: [
@@ -519,12 +525,7 @@
             if (!e.target.closest('#export-dropdown-wrap')) closeDropdown('export-menu', 'export-btn');
         });
 
-    } // initProgramsTable
-    window.initProgramsTable = initProgramsTable;
-    document.addEventListener('DOMContentLoaded', initProgramsTable);
-    window.addEventListener('avl:viewChanged', function(e) {
-        if (e.detail && e.detail.view === 'programs') initProgramsTable();
-    });
+    }); // DOMContentLoaded
 
     // ── Helpers ───────────────────────────────────────────────────────────────────
     function toggleDropdown(btnId, menuId) {
@@ -1058,7 +1059,7 @@
                 'position:fixed','top:0','left:0','width:100%','height:100%',
                 'background:rgba(0,0,0,0.55)','backdrop-filter:blur(3px)',
                 'display:flex','align-items:center','justify-content:center',
-                'z-index:9998'
+                'z-index:' + (window.AVL_OFFLINE_MODE ? '10005' : '9998')
             ].join(';');
 
             // ── Dialog box ──

@@ -118,15 +118,15 @@ function extractMainContent(spId, html) {
 // 2. Pre-extract all 10 Subpage HTML Templates directly from source HTML files
 const subpages = [
     { id: 'overview', file: 'REPORT.html' },
-    { id: 'panels', file: 'https://av-line.github.io/SWOOD_AVL/Report_Test/HTML/panels.html' },
-    { id: 'cabinets', file: 'https://av-line.github.io/SWOOD_AVL/Report_Test/HTML/cabinets.html' },
-    { id: 'bigparts', file: 'https://av-line.github.io/SWOOD_AVL/Report_Test/HTML/bigparts.html' },
-    { id: 'laminates', file: 'https://av-line.github.io/SWOOD_AVL/Report_Test/HTML/laminates.html' },
-    { id: 'cutting', file: 'https://av-line.github.io/SWOOD_AVL/Report_Test/HTML/cutting.html' },
-    { id: 'programs', file: 'https://av-line.github.io/SWOOD_AVL/Report_Test/HTML/programs.html' },
-    { id: 'fittings', file: 'https://av-line.github.io/SWOOD_AVL/Report_Test/HTML/fittings.html' },
-    { id: 'purchase', file: 'https://av-line.github.io/SWOOD_AVL/Report_Test/HTML/purchase.html' },
-    { id: 'summary', file: 'https://av-line.github.io/SWOOD_AVL/Report_Test/HTML/summary.html' }
+    { id: 'panels', file: '_SOURCE/HTML/panels.html' },
+    { id: 'cabinets', file: '_SOURCE/HTML/cabinets.html' },
+    { id: 'bigparts', file: '_SOURCE/HTML/bigparts.html' },
+    { id: 'laminates', file: '_SOURCE/HTML/laminates.html' },
+    { id: 'cutting', file: '_SOURCE/HTML/cutting.html' },
+    { id: 'programs', file: '_SOURCE/HTML/programs.html' },
+    { id: 'fittings', file: '_SOURCE/HTML/fittings.html' },
+    { id: 'purchase', file: '_SOURCE/HTML/purchase.html' },
+    { id: 'summary', file: '_SOURCE/HTML/summary.html' }
 ];
 
 const subpageTemplates = {};
@@ -352,7 +352,12 @@ body { min-height: 100vh; background: var(--color-bg-primary); }
     function getSidebarHTML() {
         const activeSidebar = document.querySelector('aside.sidebar');
         if (activeSidebar) {
-            return activeSidebar.outerHTML;
+            let html = activeSidebar.outerHTML;
+            html = html.replace(
+                /<div class="sidebar-footer">/,
+                '<div class="sidebar-footer">\\n      <div class="sidebar-offline-green-icon" title="Offline Report" style="position: absolute; top: -28px; left: 50%; transform: translateX(-50%); z-index: 10; display: flex; align-items: center; justify-content: center;">\\n        <span class="material-symbols-rounded" style="color: #10B981; font-size: 20px;">download_done</span>\\n      </div>'
+            );
+            return html;
         }
 
         return \`

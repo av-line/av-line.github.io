@@ -1,4 +1,4 @@
-function initFittingTables() {
+document.addEventListener("DOMContentLoaded", () => {
     let fittingTable;
     let lvTable;
     let rawData = [];
@@ -7,7 +7,6 @@ function initFittingTables() {
     const viewSec = document.getElementById('view-fittings') || document;
     const tableEl = viewSec.querySelector('#data-table') || document.getElementById('fittings-table');
     if (!tableEl) return;
-    if (tableEl.classList.contains('tabulator') && tableEl.children.length > 0) return;
 
     if (typeof reportData !== 'undefined' && reportData && reportData.Project) {
         const proj = reportData.Project;
@@ -156,21 +155,7 @@ function initFittingTables() {
                     const v = cell.getValue();
                     return `<strong>${v}</strong>`;
                 }
-            }, getWidthProps("QUANTITY", 10)),
-            Object.assign({
-                title: window.AVL_LANG.t("th.weblink"),
-                field: "WEBLINK",
-                hozAlign: "center",
-                headerSort: false,
-                formatter: function(cell) {
-                    const url = cell.getValue();
-                    if (!url || !url.trim()) return '<span style="opacity:0.15;font-size:1.4em;">&#8722;</span>';
-                    const fullUrl = (url.startsWith('http://') || url.startsWith('https://')) ? url : ('https://' + url);
-                    return `<a href="${fullUrl}" target="_blank" rel="noopener noreferrer" style="color:var(--color-active-primary);text-decoration:none;display:inline-flex;align-items:center;justify-content:center;" title="${url}">
-                        <span class="material-symbols-rounded" style="font-size:20px;">open_in_new</span>
-                    </a>`;
-                }
-            }, getWidthProps("WEBLINK", 8))
+            }, getWidthProps("QUANTITY", 10))
         ];
 
         if (isLV) {
@@ -298,9 +283,4 @@ function initFittingTables() {
         if (lvTable) lvTable.setColumns(getColumns(true));
         updateItemCount();
     });
-}
-window.initFittingTables = initFittingTables;
-document.addEventListener("DOMContentLoaded", initFittingTables);
-window.addEventListener("avl:viewChanged", function(e) {
-    if (e.detail && e.detail.view === 'fittings') initFittingTables();
 });

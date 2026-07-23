@@ -74,7 +74,6 @@ function populateDocFooters() {
   s('foot-projpos', prj.PRJ_POSITION);
   s('foot-report', (prj.REPORT_TYPE || '') + " | " + (prj.REPORT_VERSION || ''));
 }
-window.populateDocFooters = populateDocFooters;
 
 document.addEventListener('DOMContentLoaded', populateDocFooters);
 window.addEventListener('load', populateDocFooters);

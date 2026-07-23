@@ -1,8 +1,5 @@
-function initBigPartsLogic() {
-    const viewSec = document.getElementById('view-bigparts') || document;
-    const tableEl = viewSec.querySelector('#bigparts-table') || document.getElementById('bigparts-table');
-    if (!tableEl) return;
-    if (tableEl.classList.contains('tabulator') && tableEl.children.length > 0) return;
+// Data processing and table initialization for BigParts Report
+document.addEventListener("DOMContentLoaded", () => {
 
     // 1. Populate Footer Metadata
     const proj = (typeof reportData !== 'undefined' && reportData) ? reportData.Project : null;
@@ -450,9 +447,4 @@ function initBigPartsLogic() {
             if (bigPartsTable) bigPartsTable.redraw(true);
         });
     }
-}
-window.initBigPartsLogic = initBigPartsLogic;
-document.addEventListener("DOMContentLoaded", initBigPartsLogic);
-window.addEventListener("avl:viewChanged", function(e) {
-    if (e.detail && e.detail.view === 'bigparts') initBigPartsLogic();
 });

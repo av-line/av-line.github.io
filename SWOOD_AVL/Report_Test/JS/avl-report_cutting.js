@@ -759,11 +759,9 @@ function attachZoomControls(W, H) {
 function populateCabinets() {
     const sel = document.getElementById('cab-select');
     if (!sel || typeof reportData === 'undefined' || !reportData.Project) return;
-    const getArray = (v) => (!v ? [] : Array.isArray(v) ? v : [v]);
-    const cabs = getArray(reportData.Project.CABINET);
+    const cabs = Array.isArray(reportData.Project.CABINET) ? reportData.Project.CABINET : [reportData.Project.CABINET];
     let html = `<option value="ALL" data-i18n="cut.ctrl.cab.all">ALL Cabinets</option>`;
     cabs.forEach((c, ci) => {
-        if (!c) return;
         const nr = c.SNR_CAB || `${ci+1}`;
         const desc = c.DESCRIPTION_CAB ? ` \u2014 ${c.DESCRIPTION_CAB}` : '';
         html += `<option value="${ci}">${esc(nr)}${esc(desc)}</option>`;
@@ -782,11 +780,7 @@ function populateMaterials(){
     const map={}; getAllParts().forEach(p=>{ if(p.PAN_MATREF&&!map[p.PAN_MATREF]) map[p.PAN_MATREF]=p.PAN_MATDESC||p.PAN_MATREF; });
     const currentVal = sel.value;
     sel.innerHTML=Object.entries(map).map(([r,d])=>`<option value="${esc(r)}">${esc(r)} \u2014 ${esc(d)}</option>`).join('');
-    if (map[currentVal]) {
-        sel.value = currentVal;
-    } else if (sel.options.length > 0) {
-        sel.selectedIndex = 0;
-    }
+    if (map[currentVal]) sel.value = currentVal;
     updateGrainVis();
 }
 function updateGrainVis() {
@@ -837,14 +831,7 @@ function updateCuttingUnitLabels() {
     _st.lastUnitFormat = currentFmt;
 }
 
-let _cuttingInited = false;
-function initCuttingLogic() {
-    const viewSec = document.getElementById('view-cutting') || document;
-    const cabSelect = viewSec.querySelector('#cab-select') || document.getElementById('cab-select');
-    if (!cabSelect) return;
-    if (_cuttingInited && cabSelect.children.length > 0) return;
-    _cuttingInited = true;
-
+document.addEventListener('DOMContentLoaded',()=>{
     // Restore cut-done state from embedded file snapshot (if tabledata.js was saved)
     if (window.AVL_SAVE) window.AVL_SAVE.restoreAll();
 
@@ -858,12 +845,6 @@ function initCuttingLogic() {
     [lI,wI].forEach(e=>e?.addEventListener('input',()=>{ preset.value='custom'; }));
     document.querySelectorAll('.grain-btn').forEach(b=>b.addEventListener('click',()=>{ document.querySelectorAll('.grain-btn').forEach(x=>x.classList.remove('active')); b.classList.add('active'); }));
     document.getElementById('optimize-btn')?.addEventListener('click', optimize);
-}
-window.initCuttingLogic = initCuttingLogic;
-document.addEventListener('DOMContentLoaded', initCuttingLogic);
-window.addEventListener('avl:viewChanged', (e) => {
-    if (e.detail && e.detail.view === 'cutting') initCuttingLogic();
-});
 
     // Re-render dynamic content when language or unit changes
     window.addEventListener('avl:langChanged', () => {

@@ -186,10 +186,13 @@ function buildExpandedItems(matRef, grain) {
     // Colours by cabinet — use pre-built map or rebuild if missing
     const cabColors = _st.cabColorMap || buildCabinetColors();
     const items=[];
+    const isImperialSource = window.AVL_UNITS && window.AVL_UNITS.getSourceFormat() !== 'metric';
+    const srcScale = isImperialSource ? 25.4 : 1;
+
     raw.forEach(p=>{
         const qty=Math.max(1,parseInt(p.QTY,10)||1);
-        const stl=parseFloat(p.PAN_STL)||parseFloat(p.PAN_LWEB)||0;
-        const stw=parseFloat(p.PAN_STW)||parseFloat(p.PAN_WWEB)||0;
+        const stl=(parseFloat(p.PAN_STL)||parseFloat(p.PAN_LWEB)||0) * srcScale;
+        const stw=(parseFloat(p.PAN_STW)||parseFloat(p.PAN_WWEB)||0) * srcScale;
         if(!stl||!stw) return;
         const withGrain=p.PAN_MATWITHGRAIN==='1';
         const pw=withGrain?(grain==='H'?stl:stw):stl;
@@ -240,7 +243,8 @@ function buildBoardSVG(board, W, H, padL, padR, padT, padB, idx, grain) {
         const absY = padT + pl.y;
         const c = pl.part.color, cx = absX + pl.w / 2, cy = absY + pl.h / 2;
         const tiny = pl.w < 70 || pl.h < 50;
-        const dim = `${fmtDim(pl.w)}\u00d7${fmtDim(pl.h)}`;
+        const toSrc = (val) => isImperialSource ? val / 25.4 : val;
+        const dim = `${fmtDim(toSrc(pl.w))}\u00d7${fmtDim(toSrc(pl.h))}`;
         const partIdEsc = esc(pl.part.id);
         s += `<rect x="${absX + 1.5}" y="${absY + 1.5}" width="${pl.w - 3}" height="${pl.h - 3}" fill="${c}" fill-opacity="0.72" stroke="${c}" stroke-width="2" rx="3" class="part-rect" data-part-id="${partIdEsc}" style="cursor:pointer;"/>`;
         if (!tiny) {
@@ -818,9 +822,9 @@ function updateCuttingUnitLabels() {
 
     const currentFmt = window.AVL_UNITS ? window.AVL_UNITS.getFormat() : 'metric';
     const isCurrImp = currentFmt !== 'metric';
-    const isPrevImp = (_st.lastUnitFormat || 'metric') !== 'metric';
+    const isPrevImp = _st.lastUnitFormat ? (_st.lastUnitFormat !== 'metric') : false;
 
-    if (_st.lastUnitFormat && isCurrImp !== isPrevImp) {
+    if (isCurrImp !== isPrevImp) {
         const factor = isCurrImp ? (1 / 25.4) : 25.4;
         ['board-l', 'board-w', 'kerf', 'pad-left', 'pad-right', 'pad-top', 'pad-bottom'].forEach(id => {
             const el = document.getElementById(id);
@@ -845,7 +849,14 @@ document.addEventListener('DOMContentLoaded',()=>{
     document.getElementById('cab-select')?.addEventListener('change', populateMaterials);
     document.getElementById('mat-select')?.addEventListener('change', updateGrainVis);
     const preset=document.getElementById('board-preset'), lI=document.getElementById('board-l'), wI=document.getElementById('board-w');
-    preset?.addEventListener('change',()=>{ if(preset.value==='custom')return; const[l,w]=preset.value.split('x').map(Number); lI.value=l; wI.value=w; });
+    preset?.addEventListener('change',()=>{ 
+        if(preset.value==='custom')return; 
+        const[l,w]=preset.value.split('x').map(Number); 
+        const isImp = window.AVL_UNITS && window.AVL_UNITS.getFormat() !== 'metric';
+        const f = isImp ? (1/25.4) : 1;
+        lI.value=(l*f).toFixed(isImp?2:0); 
+        wI.value=(w*f).toFixed(isImp?2:0); 
+    });
     [lI,wI].forEach(e=>e?.addEventListener('input',()=>{ preset.value='custom'; }));
     document.querySelectorAll('.grain-btn').forEach(b=>b.addEventListener('click',()=>{ document.querySelectorAll('.grain-btn').forEach(x=>x.classList.remove('active')); b.classList.add('active'); }));
     document.getElementById('optimize-btn')?.addEventListener('click', optimize);

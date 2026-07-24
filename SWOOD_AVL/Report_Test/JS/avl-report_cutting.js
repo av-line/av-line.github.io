@@ -222,9 +222,8 @@ function buildBoardSVG(board, W, H, padL, padR, padT, padB, idx, grain) {
     const usableH = Math.max(10, H - padT - padB);
 
     const eff = ((area / (W * H)) * 100).toFixed(1);
-    const isImperialSource = window.AVL_UNITS && window.AVL_UNITS.getSourceFormat() !== 'metric';
     const trueM2 = (W * H - area) / 1e6;
-    const wasteVal = isImperialSource ? trueM2 / 0.09290304 : trueM2;
+    const wasteVal = trueM2;
 
     const fmtDim = (v) => window.AVL_UNITS ? window.AVL_UNITS.formatDim(v) : Math.round(v);
 
@@ -243,6 +242,7 @@ function buildBoardSVG(board, W, H, padL, padR, padT, padB, idx, grain) {
         const absY = padT + pl.y;
         const c = pl.part.color, cx = absX + pl.w / 2, cy = absY + pl.h / 2;
         const tiny = pl.w < 70 || pl.h < 50;
+        const isImperialSource = window.AVL_UNITS && window.AVL_UNITS.getSourceFormat() !== 'metric';
         const toSrc = (val) => isImperialSource ? val / 25.4 : val;
         const dim = `${fmtDim(toSrc(pl.w))}\u00d7${fmtDim(toSrc(pl.h))}`;
         const partIdEsc = esc(pl.part.id);
@@ -623,9 +623,8 @@ function renderOutput(boards, W, H, padL, padR, padT, padB, allItems, unplaceabl
     boards.forEach(b => b.placements.forEach(p => totalArea += p.w * p.h));
     const totalBoardArea = boards.length * W * H;
     const eff = ((totalArea / totalBoardArea) * 100).toFixed(1);
-    const isImperialSource = window.AVL_UNITS && window.AVL_UNITS.getSourceFormat() !== 'metric';
     const trueM2 = (totalBoardArea - totalArea) / 1e6;
-    const wasteVal = isImperialSource ? trueM2 / 0.09290304 : trueM2;
+    const wasteVal = trueM2;
 
     const fmtDim = (v) => window.AVL_UNITS ? window.AVL_UNITS.formatDim(v) : Math.round(v);
     const wasteFormatted = window.AVL_UNITS ? window.AVL_UNITS.formatAreaFromM2(wasteVal) : `${wasteVal.toFixed(3)} m²`;
@@ -640,7 +639,9 @@ function renderOutput(boards, W, H, padL, padR, padT, padB, allItems, unplaceabl
 
     if (unplaceable.length) {
         const w = document.createElement('div'); w.className = 'cut-warning';
-        w.innerHTML = `<span class="material-symbols-rounded">warning</span><span><strong>${t('cut.warn.exceed', { n: unplaceable.length })}</strong> ${unplaceable.map(u => `<code>${esc(u.desc)} ${fmtDim(u.w)}&times;${fmtDim(u.h)}</code>`).join(' ')}</span>`;
+        const isImperialSource = window.AVL_UNITS && window.AVL_UNITS.getSourceFormat() !== 'metric';
+        const toSrc = (val) => isImperialSource ? val / 25.4 : val;
+        w.innerHTML = `<span class="material-symbols-rounded">warning</span><span><strong>${t('cut.warn.exceed', { n: unplaceable.length })}</strong> ${unplaceable.map(u => `<code>${esc(u.desc)} ${fmtDim(toSrc(u.w))}&times;${fmtDim(toSrc(u.h))}</code>`).join(' ')}</span>`;
         output.appendChild(w);
     }
 

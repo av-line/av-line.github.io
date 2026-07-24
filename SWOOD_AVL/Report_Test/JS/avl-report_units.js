@@ -62,27 +62,29 @@
 
     // ── Format detection ────────────────────────────────────────────────────
 
-    /** Default format declared in tabledata.js (Project.UNIT_FORMAT). */
+    /** Source format declared in tabledata.js (Project.UNIT_SOURCE). Defaults to metric if absent. */
     function getSourceFormat() {
         try {
             if (typeof reportData !== 'undefined' && reportData && reportData.Project) {
-                let fmt = (reportData.Project.UNIT_FORMAT || 'metric').toLowerCase().trim();
-                if (fmt === 'imperial') fmt = 'imperial_decimal';
-                if (['metric', 'imperial_decimal', 'imperial_fraction'].includes(fmt)) return fmt;
+                const src = (reportData.Project.UNIT_SOURCE || '').toLowerCase();
+                if (src === 'imperial' || src === 'imperial_decimal' || src === 'imperial_fraction') return 'imperial_fraction';
+                return 'metric';
             }
-        } catch (e) { /* ignore */ }
+        } catch (e) {
+            console.error('Error reading Project.UNIT_SOURCE:', e);
+        }
         return 'metric';
     }
 
     /** Currently selected display format (localStorage > source default). */
     function getFormat() {
-        const saved = localStorage.getItem(STORAGE_KEY);
+        const saved = sessionStorage.getItem(STORAGE_KEY);
         if (saved && ['metric', 'imperial_decimal', 'imperial_fraction'].includes(saved)) return saved;
         return getSourceFormat();
     }
 
     function setFormat(fmt) {
-        localStorage.setItem(STORAGE_KEY, fmt);
+        sessionStorage.setItem(STORAGE_KEY, fmt);
         window.dispatchEvent(new CustomEvent('avl:unitChanged', { detail: { format: fmt } }));
     }
 
@@ -92,8 +94,7 @@
      * Format a dimension value from tabledata.js for display.
      * Respects Project.UNIT_FORMAT as the base unit.
      */
-    function formatDim(rawVal, opts) {
-        opts = opts || {};
+    function formatDim(rawVal, opts = {}) {
         const val = parseFloat(rawVal);
         if (isNaN(val)) return (rawVal != null ? String(rawVal) : '-');
 
@@ -145,7 +146,7 @@
                 ft2 = v;
                 m2  = v * M2_PER_FT2;
             }
-            return isMetricDisplay ? m2.toFixed(2) + ' m²' : ft2.toFixed(2) + ' ft²';
+            return isMetricDisplay ? m2.toFixed(3) + ' m²' : ft2.toFixed(2) + ' ft²';
         }
 
         if (unit === 'lm' || unit === 'LF') {

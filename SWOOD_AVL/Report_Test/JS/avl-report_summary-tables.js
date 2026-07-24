@@ -165,6 +165,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
             });
 
+            const isMetric = (window.AVL_UNITS && typeof window.AVL_UNITS.getSourceFormat === 'function' && window.AVL_UNITS.getSourceFormat() === 'metric');
+            const divVol = isMetric ? 1000000000 : 1728;
+            const divArea = isMetric ? 1000000 : 144;
+            const divLen = isMetric ? 1000 : 12;
+
             allParts.forEach(pan => {
                         
                         // --- Handle Material ---
@@ -183,17 +188,17 @@ document.addEventListener("DOMContentLoaded", () => {
                             
                             // Type 0 is m³, Type 1 is m², Type 2 is lm, Type 3 is pc. Using type 1 as default
                             if (costType === "0") {
-                                qty = (lweb * wweb * stt) / 1000000000;
+                                qty = (lweb * wweb * stt) / divVol;
                                 unit = "m³";
                             } else if (costType === "2") {
                                 const stl = parseFloat(pan.PAN_STL) || 0;
-                                qty = stl / 1000;
+                                qty = stl / divLen;
                                 unit = "lm";
                             } else if (costType === "3") {
                                 qty = 1;
                                 unit = "pc";
                             } else {
-                                qty = (lweb * wweb) / 1000000;
+                                qty = (lweb * wweb) / divArea;
                                 unit = "m²";
                             }
                             
@@ -221,7 +226,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         
                         edges.forEach(edge => {
                             if (edge.name) {
-                                const lm = (edge.lstock / 1000) * parseFloat(pan.QTY || pan.QUANTITY || 1);
+                                const lm = (edge.lstock / divLen) * parseFloat(pan.QTY || pan.QUANTITY || 1);
                                 const desc = edge.desc || "";
                                 const t = edge.t || "";
                                 const key = `${edge.name}_${desc}_${t}`;
@@ -259,16 +264,16 @@ document.addEventListener("DOMContentLoaded", () => {
                                 let stt = parseFloat(lam.t) || 0;
 
                                 if (lam.type === "0") {
-                                    qty = (lam.l * lam.w * stt) / 1000000000;
+                                    qty = (lam.l * lam.w * stt) / divVol;
                                     unit = "m³";
                                 } else if (lam.type === "2") {
-                                    qty = lam.l / 1000;
+                                    qty = lam.l / divLen;
                                     unit = "lm";
                                 } else if (lam.type === "3") {
                                     qty = 1;
                                     unit = "pc";
                                 } else {
-                                    qty = (lam.l * lam.w) / 1000000;
+                                    qty = (lam.l * lam.w) / divArea;
                                     unit = "m²";
                                 }
                                 

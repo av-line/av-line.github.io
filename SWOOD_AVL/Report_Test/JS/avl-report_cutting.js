@@ -223,7 +223,7 @@ function buildBoardSVG(board, W, H, padL, padR, padT, padB, idx, grain) {
 
     const eff = ((area / (W * H)) * 100).toFixed(1);
     const trueM2 = (W * H - area) / 1e6;
-    const wasteVal = trueM2;
+    const wasteM2 = trueM2;
 
     const fmtDim = (v) => window.AVL_UNITS ? window.AVL_UNITS.formatDim(v) : Math.round(v);
 

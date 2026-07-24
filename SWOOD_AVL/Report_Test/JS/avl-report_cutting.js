@@ -133,12 +133,16 @@ function getAllParts() {
 }
 
 function getBoardParams() {
-    const isImperial = window.AVL_UNITS && window.AVL_UNITS.getFormat() !== 'metric';
-    const scale = isImperial ? 25.4 : 1;
+    const isImperialDisplay = window.AVL_UNITS && window.AVL_UNITS.getFormat() !== 'metric';
+    const isImperialSource = window.AVL_UNITS && window.AVL_UNITS.getSourceFormat() !== 'metric';
+    
+    let scale = 1;
+    if (isImperialDisplay && !isImperialSource) scale = 25.4;
+    else if (!isImperialDisplay && isImperialSource) scale = 1 / 25.4;
 
-    const rawL = parseFloat(document.getElementById('board-l')?.value) || (isImperial ? 110.2 : 2800);
-    const rawW = parseFloat(document.getElementById('board-w')?.value) || (isImperial ? 40.7 : 1035);
-    const rawKerf = parseFloat(document.getElementById('kerf')?.value) || (isImperial ? 0.16 : 4);
+    const rawL = parseFloat(document.getElementById('board-l')?.value) || (isImperialDisplay ? 110.2 : 2800);
+    const rawW = parseFloat(document.getElementById('board-w')?.value) || (isImperialDisplay ? 40.7 : 1035);
+    const rawKerf = parseFloat(document.getElementById('kerf')?.value) || (isImperialDisplay ? 0.16 : 4);
 
     const rawPadL = parseFloat(document.getElementById('pad-left')?.value) || 0;
     const rawPadR = parseFloat(document.getElementById('pad-right')?.value) || 0;
@@ -219,7 +223,8 @@ function buildBoardSVG(board, W, H, padL, padR, padT, padB, idx, grain) {
     const usableH = Math.max(10, H - padT - padB);
 
     const eff = ((area / (W * H)) * 100).toFixed(1);
-    const wasteM2 = (W * H - area) / 1e6;
+    const divArea = (!window.AVL_UNITS || window.AVL_UNITS.getSourceFormat() === 'metric') ? 1e6 : 144;
+    const wasteM2 = (W * H - area) / divArea;
 
     const fmtDim = (v) => window.AVL_UNITS ? window.AVL_UNITS.formatDim(v) : Math.round(v);
 
@@ -617,7 +622,8 @@ function renderOutput(boards, W, H, padL, padR, padT, padB, allItems, unplaceabl
     boards.forEach(b => b.placements.forEach(p => totalArea += p.w * p.h));
     const totalBoardArea = boards.length * W * H;
     const eff = ((totalArea / totalBoardArea) * 100).toFixed(1);
-    const wasteM2 = (totalBoardArea - totalArea) / 1e6;
+    const divArea = (!window.AVL_UNITS || window.AVL_UNITS.getSourceFormat() === 'metric') ? 1e6 : 144;
+    const wasteM2 = (totalBoardArea - totalArea) / divArea;
 
     const fmtDim = (v) => window.AVL_UNITS ? window.AVL_UNITS.formatDim(v) : Math.round(v);
     const wasteFormatted = window.AVL_UNITS ? window.AVL_UNITS.formatAreaFromM2(wasteM2) : `${wasteM2.toFixed(3)} m²`;

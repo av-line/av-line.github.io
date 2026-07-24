@@ -77,10 +77,26 @@
     }
 
     /** Currently selected display format (localStorage > source default). */
+    /** Parses UNIT_FORMAT to get the default display format. */
+    function getDefaultDisplayFormat() {
+        try {
+            if (typeof reportData !== 'undefined' && reportData && reportData.Project) {
+                let fmt = (reportData.Project.UNIT_FORMAT || '').toLowerCase().trim();
+                if (fmt.includes('inch') || fmt.includes('imperial')) {
+                    if (fmt.includes('fraction')) return 'imperial_fraction';
+                    return 'imperial_decimal';
+                }
+                if (['metric', 'imperial_decimal', 'imperial_fraction'].includes(fmt)) return fmt;
+            }
+        } catch (e) { /* ignore */ }
+        return getSourceFormat(); // fallback to source format if UNIT_FORMAT is missing
+    }
+
+    /** Currently selected display format (localStorage > UNIT_FORMAT > UNIT_SOURCE). */
     function getFormat() {
         const saved = sessionStorage.getItem(STORAGE_KEY);
         if (saved && ['metric', 'imperial_decimal', 'imperial_fraction'].includes(saved)) return saved;
-        return getSourceFormat();
+        return getDefaultDisplayFormat();
     }
 
     function setFormat(fmt) {

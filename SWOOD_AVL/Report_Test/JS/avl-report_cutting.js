@@ -249,8 +249,8 @@ function buildBoardSVG(board, W, H, padL, padR, padT, padB, idx, grain) {
         s += `<rect x="${absX + 1.5}" y="${absY + 1.5}" width="${pl.w - 3}" height="${pl.h - 3}" fill="${c}" fill-opacity="0.72" stroke="${c}" stroke-width="2" rx="3" class="part-rect" data-part-id="${partIdEsc}" style="cursor:pointer;"/>`;
         if (!tiny) {
             const f1 = Math.max(10, Math.min(18, pl.h * 0.14)), f2 = Math.max(9, Math.min(14, pl.h * 0.11));
-            s += `<text x="${cx}" y="${absY + pl.h * 0.28}" text-anchor="middle" font-size="${f1}" class="svg-label-main" pointer-events="none">${esc(pl.part.desc.substring(0, 20))}</text>`;
-            s += `<text x="${cx}" y="${absY + pl.h * 0.50}" text-anchor="middle" font-size="${f2}" class="svg-label-file" pointer-events="none">${esc(pl.part.filename.substring(0, 18))}</text>`;
+            s += `<text x="${cx}" y="${absY + pl.h * 0.28}" text-anchor="middle" font-size="${f1}" class="svg-label-main" pointer-events="none">${esc(String(pl.part.desc).substring(0, 20))}</text>`;
+            s += `<text x="${cx}" y="${absY + pl.h * 0.50}" text-anchor="middle" font-size="${f2}" class="svg-label-file" pointer-events="none">${esc(String(pl.part.filename).substring(0, 18))}</text>`;
             s += `<text x="${cx}" y="${absY + pl.h * 0.72}" text-anchor="middle" font-size="${f2}" class="svg-label-dim" pointer-events="none">${dim}</text>`;
             if (pl.rotated) s += `<text x="${absX + pl.w - 8}" y="${absY + 20}" text-anchor="end" font-size="16" class="svg-label-rot" pointer-events="none">\u21ba</text>`;
         } else {

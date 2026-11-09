@@ -8,7 +8,7 @@ const COLORS = [
 ];
 
 // ── Module state ─────────────────────────────────────────────────────────────
-const _st = { allItems: [], doneIds: new Set(), lastMatRef: null, selected: new Set(), lastClickIdx: -1 };
+const _st = { allItems: [], doneIds: new Set(), lastMatRef: null, selected: new Set(), lastClickIdx: -1, doneDropdownOpen: false, doneSearchQuery: '' };
 
 // ── Cut-done localStorage helpers ─────────────────────────────────────────────
 // Key is per-material so switching materials doesn't clobber each other.
@@ -50,7 +50,37 @@ class GuillotinePacker {
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
-const t = (key, params) => (window.AVL_LANG ? window.AVL_LANG.t(key, params) : key);
+const _FALLBACK_I18N = {
+    de: {
+        'cut.stat.done': 'Zugeschnitten',
+        'cut.list.done_section': 'Bereits zugeschnitten ({done})',
+        'cut.list.restorebtn': 'Zurückholen',
+        'cut.list.restore_all': 'Alle zurückholen',
+        'cut.list.pending_reopt': 'Für Nachfertigung (Neu optimieren)',
+        'cut.list.done_search': 'Search',
+        'cut.list.done_no_match': 'Keine passenden Teile gefunden'
+    },
+    en: {
+        'cut.stat.done': 'Already Cut',
+        'cut.list.done_section': 'Already cut ({done})',
+        'cut.list.restorebtn': 'Restore',
+        'cut.list.restore_all': 'Restore all',
+        'cut.list.pending_reopt': 'Pending re-optimization',
+        'cut.list.done_search': 'Search',
+        'cut.list.done_no_match': 'No matching parts found'
+    }
+};
+const t = (key, params) => {
+    let res = window.AVL_LANG ? window.AVL_LANG.t(key, params) : key;
+    if (res === key) {
+        const lang = (window.AVL_LANG && window.AVL_LANG.getLang && window.AVL_LANG.getLang()) || 'de';
+        const dict = _FALLBACK_I18N[lang] || _FALLBACK_I18N.de;
+        if (dict[key]) {
+            res = dict[key].replace(/\{(\w+)\}/g, (_, k) => (params && params[k] !== undefined) ? params[k] : `{${k}}`);
+        }
+    }
+    return res;
+};
 const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 window.addEventListener('languagechange', () => { if(window.renderAll) window.renderAll(); });
 
@@ -287,7 +317,10 @@ function buildBoardSVG(board, W, H, padL, padR, padT, padB, idx, grain) {
 function buildCutList(partBoardMap) {
     const panel=document.getElementById('cut-list-panel');
     if(!panel) return;
+    const prevScroll = document.getElementById('cl-body')?.scrollTop || 0;
     panel.style.display='flex';
+
+    partBoardMap = partBoardMap || _st.lastBoardMap || {};
 
     const total=_st.allItems.length;
     const done=_st.doneIds.size;
@@ -333,6 +366,18 @@ function buildCutList(partBoardMap) {
             return ma.x - mb.x;
         });
 
+    const doneItems = _st.allItems
+        .filter(i => _st.doneIds.has(i.id))
+        .sort((a, b) => {
+            const ma = partBoardMap[a.id] || { board: 999, x: 0, y: 0 };
+            const mb = partBoardMap[b.id] || { board: 999, x: 0, y: 0 };
+            if (ma.board !== mb.board) return ma.board - mb.board;
+            const sa = getStripIndex(a), sb = getStripIndex(b);
+            if (sa !== sb) return sa - sb;
+            if (ma.x !== mb.x) return ma.x - mb.x;
+            return String(a.id).localeCompare(String(b.id), undefined, { numeric: true });
+        });
+
     // Build sequential strip labels: only count bands that actually have panels.
     // Raw strip index 0,2 → displayed as Cut 1, Cut 2 (skip empty bands).
     const boardStripLabels = new Map(); // board -> Map(rawStripIdx -> sequentialLabel)
@@ -359,7 +404,8 @@ function buildCutList(partBoardMap) {
     const fmtDim = (v) => window.AVL_UNITS ? window.AVL_UNITS.formatDim(v) : Math.round(v);
     const rows = visibleItems.map(item => {
         const m = partBoardMap[item.id] || {};
-        const brd = m.board || '?';
+        const isPending = !m.board;
+        const brd = m.board || '–';
         const strip = getStripIndex(item);
         const stripLabel = getStripLabel(item);
         // Detect rotation: placed w ≈ stw and placed h ≈ stl means the packer rotated it
@@ -367,13 +413,20 @@ function buildCutList(partBoardMap) {
             Math.abs(Math.round(m.w) - Math.round(item.stw)) < 2 &&
             Math.abs(Math.round(m.h) - Math.round(item.stl)) < 2;
         let out = '';
-        if (brd !== lastBoard) {
-            out += `<tr class="cl-board-header"><td colspan="5"><span class="material-symbols-rounded">dashboard</span> ${t('cut.list.board')} ${brd}</td></tr>`;
-            lastBoard = brd; lastStrip = null;
-        }
-        if (strip !== lastStrip) {
-            out += `<tr class="cl-strip-header"><td colspan="5"><span class="material-symbols-rounded">horizontal_rule</span> ${t('cut.list.cut')} ${stripLabel}</td></tr>`;
-            lastStrip = strip;
+        if (isPending) {
+            if (lastBoard !== '__PENDING__') {
+                out += `<tr class="cl-pending-header"><td colspan="5"><span class="material-symbols-rounded">schedule</span> ${t('cut.list.pending_reopt')}</td></tr>`;
+                lastBoard = '__PENDING__'; lastStrip = null;
+            }
+        } else {
+            if (brd !== lastBoard) {
+                out += `<tr class="cl-board-header"><td colspan="5"><span class="material-symbols-rounded">dashboard</span> ${t('cut.list.board')} ${brd}</td></tr>`;
+                lastBoard = brd; lastStrip = null;
+            }
+            if (strip !== lastStrip) {
+                out += `<tr class="cl-strip-header"><td colspan="5"><span class="material-symbols-rounded">horizontal_rule</span> ${t('cut.list.cut')} ${stripLabel}</td></tr>`;
+                lastStrip = strip;
+            }
         }
         out += `<tr id="cutrow-${esc(item.id)}" class="cut-row" data-part-id="${esc(item.id)}">
             <td class="cc-chk"><input type="checkbox" class="cut-cb" data-id="${esc(item.id)}"></td>
@@ -385,7 +438,7 @@ function buildCutList(partBoardMap) {
         return out;
     }).join('');
 
-    const unitSuffix = window.AVL_UNITS ? window.AVL_UNITS.getUnitSuffix() : 'mm';
+    const emptyOpenRow = !rows ? `<tr><td colspan="5" class="cl-empty-row">${t('cut.list.alldone')}</td></tr>` : '';
 
     panel.innerHTML = `
         <div class="cl-header">
@@ -396,7 +449,7 @@ function buildCutList(partBoardMap) {
         <div class="cl-body" id="cl-body">
             <table class="cl-table">
                 <thead><tr><th></th><th></th><th>${t('cut.list.col.desc')}</th><th>${t('cut.list.col.mm')}</th><th>${t('cut.list.col.brd')}</th></tr></thead>
-                <tbody id="cl-tbody">${rows || `<tr><td colspan="5" class="cl-empty-row">${t('cut.list.alldone')}</td></tr>`}</tbody>
+                <tbody id="cl-tbody">${rows || emptyOpenRow}</tbody>
             </table>
         </div>
         <div class="cl-footer">
@@ -408,6 +461,11 @@ function buildCutList(partBoardMap) {
                 <span class="material-symbols-rounded">refresh</span> ${t('cut.list.reopt',{rem})}
             </button>
         </div>`;
+
+    const clBody = document.getElementById('cl-body');
+    if (clBody && prevScroll > 0) clBody.scrollTop = prevScroll;
+
+    renderDoneDropdown();
 
     // ── Row selection: click / Ctrl+click / Shift+click ────────────────────────
     // Only count visible rows for range indexing
@@ -443,7 +501,7 @@ function buildCutList(partBoardMap) {
                 } else {
                     _st.selected.clear();
                     _st.selected.add(id);
-                    highlightSVGPart(id);
+                    if (!row.dataset.done) highlightSVGPart(id);
                 }
                 _st.lastClickIdx = idx;
             }
@@ -451,36 +509,68 @@ function buildCutList(partBoardMap) {
         });
     });
 
-    // ── Checkbox: if row is in a multi-selection, apply to all selected ─────────
+    // ── Checkbox: supports both marking as cut (checked) and restoring (unchecked) ──
     panel.querySelectorAll('.cut-cb').forEach(cb => {
         cb.addEventListener('change', e => {
             const id = e.target.dataset.id;
-            // Determine target IDs: all selected (if this row is among them) or just this row
-            const targets = (e.target.checked && _st.selected.has(id) && _st.selected.size > 1)
-                ? [..._st.selected]
-                : [id];
+            const isChecking = e.target.checked;
+            if (isChecking) {
+                const targets = (_st.selected.has(id) && _st.selected.size > 1)
+                    ? [..._st.selected].filter(tid => !_st.doneIds.has(tid))
+                    : [id];
+                targets.forEach(tid => {
+                    _st.doneIds.add(tid);
+                    _st.selected.delete(tid);
+                    const row = document.getElementById(`cutrow-${tid}`);
+                    if (row) row.style.opacity = '0';
+                });
+                lsCutSave(_st.lastMatRef, _st.doneIds);
+                setTimeout(() => {
+                    buildCutList(_st.lastBoardMap);
+                    refreshCLHeader();
+                }, 260);
+            } else {
+                // Restore part(s) back to open list for remanufacturing
+                const targets = (_st.selected.has(id) && _st.selected.size > 1)
+                    ? [..._st.selected].filter(tid => _st.doneIds.has(tid))
+                    : [id];
+                targets.forEach(tid => {
+                    _st.doneIds.delete(tid);
+                    _st.selected.delete(tid);
+                });
+                lsCutSave(_st.lastMatRef, _st.doneIds);
+                buildCutList(_st.lastBoardMap);
+                refreshCLHeader();
+            }
+        });
+    });
+
+    // "Mark cut" / "Restore" action button for multi-selection
+    panel.querySelector('#cl-mark-done')?.addEventListener('click', () => {
+        const selectedArr = [..._st.selected];
+        const allSelectedDone = selectedArr.length > 0 && selectedArr.every(tid => _st.doneIds.has(tid));
+        if (allSelectedDone) {
+            selectedArr.forEach(tid => {
+                _st.doneIds.delete(tid);
+                _st.selected.delete(tid);
+            });
+            lsCutSave(_st.lastMatRef, _st.doneIds);
+            buildCutList(_st.lastBoardMap);
+            refreshCLHeader();
+        } else {
+            const targets = selectedArr.filter(tid => !_st.doneIds.has(tid));
             targets.forEach(tid => {
                 _st.doneIds.add(tid);
                 _st.selected.delete(tid);
                 const row = document.getElementById(`cutrow-${tid}`);
-                if (row) { row.style.opacity = '0'; setTimeout(() => { row.style.display = 'none'; }, 280); }
+                if (row) row.style.opacity = '0';
             });
-            lsCutSave(_st.lastMatRef, _st.doneIds); // ← persist
-            setTimeout(() => { refreshCLHeader(); updateSelectionUI(panel); }, 300);
-        });
-    });
-
-    // "Mark cut" action button for multi-selection
-    panel.querySelector('#cl-mark-done')?.addEventListener('click', () => {
-        const targets = [..._st.selected];
-        targets.forEach(tid => {
-            _st.doneIds.add(tid);
-            _st.selected.delete(tid);
-            const row = document.getElementById(`cutrow-${tid}`);
-            if (row) { row.style.opacity = '0'; setTimeout(() => { row.style.display = 'none'; }, 280); }
-        });
-        lsCutSave(_st.lastMatRef, _st.doneIds); // ← persist
-        setTimeout(() => { refreshCLHeader(); updateSelectionUI(panel); }, 300);
+            lsCutSave(_st.lastMatRef, _st.doneIds);
+            setTimeout(() => {
+                buildCutList(_st.lastBoardMap);
+                refreshCLHeader();
+            }, 260);
+        }
     });
 
     document.getElementById('reopt-btn')?.addEventListener('click', runOptimization);
@@ -491,8 +581,188 @@ function updateSelectionUI(panel) {
     panel.querySelectorAll('.cut-row').forEach(r => r.classList.toggle('selected', _st.selected.has(r.dataset.partId)));
     const bar = document.getElementById('cl-sel-bar');
     const txt = document.getElementById('cl-sel-text');
+    const btn = document.getElementById('cl-mark-done');
     if (bar) bar.style.display = n > 1 ? '' : 'none';
     if (txt) txt.textContent = t('cut.list.selected', {n});
+    if (btn && n > 1) {
+        const allSelectedDone = [..._st.selected].every(tid => _st.doneIds.has(tid));
+        btn.innerHTML = allSelectedDone
+            ? `<span class="material-symbols-rounded">undo</span> ${t('cut.list.restorebtn')}`
+            : `<span class="material-symbols-rounded">check</span> ${t('cut.list.markcutbtn')}`;
+    }
+}
+
+function renderDoneDropdown() {
+    const wrap = document.getElementById('done-stat-wrap');
+    if (!wrap) return;
+    const prevDdScroll = document.getElementById('done-dd-body')?.scrollTop || 0;
+    const wasSearchFocused = document.activeElement?.id === 'done-dd-search';
+    const partBoardMap = _st.lastBoardMap || {};
+    const fmtDim = (v) => window.AVL_UNITS ? window.AVL_UNITS.formatDim(v) : Math.round(v);
+
+    const doneItems = _st.allItems
+        .filter(i => _st.doneIds.has(i.id))
+        .sort((a, b) => {
+            const ma = partBoardMap[a.id] || { board: 999, x: 0, y: 0 };
+            const mb = partBoardMap[b.id] || { board: 999, x: 0, y: 0 };
+            if (ma.board !== mb.board) return ma.board - mb.board;
+            if (ma.y !== mb.y) return ma.y - mb.y;
+            if (ma.x !== mb.x) return ma.x - mb.x;
+            return String(a.id).localeCompare(String(b.id), undefined, { numeric: true });
+        });
+
+    const done = doneItems.length;
+    if (done === 0) {
+        _st.doneDropdownOpen = false;
+        _st.doneSearchQuery = '';
+    }
+    const isOpen = _st.doneDropdownOpen && done > 0;
+    const q = (_st.doneSearchQuery || '').trim().toLowerCase();
+
+    const doneRowsHtml = doneItems.map(item => {
+        const m = partBoardMap[item.id] || {};
+        const brd = m.board || '–';
+        const dimStr = `${fmtDim(item.stl)}x${fmtDim(item.stw)}`;
+        const searchBlob = `${item.desc || ''} ${item.filename || ''} ${item.cabNr || ''} ${item.cabDesc || ''} ${dimStr} ${brd}`.toLowerCase();
+        const matches = !q || searchBlob.includes(q);
+        return `<tr class="cut-row done-row" data-part-id="${esc(item.id)}" data-search="${esc(searchBlob)}" style="${matches ? '' : 'display:none;'}">
+            <td class="cc-chk"><input type="checkbox" class="cut-cb done-dd-cb" data-id="${esc(item.id)}" checked></td>
+            <td class="cc-col"><span class="cut-swatch" style="background:${item.color}"></span></td>
+            <td class="cc-desc"><span class="cut-dname">${esc(item.desc)}</span><span class="cut-fname">${esc(item.filename)}</span></td>
+            <td class="cc-dim">${fmtDim(item.stl)}&times;${fmtDim(item.stw)}</td>
+            <td class="cc-brd">${brd}</td>
+        </tr>`;
+    }).join('');
+
+    const anyMatch = !q || doneItems.some(item => {
+        const m = partBoardMap[item.id] || {};
+        const brd = m.board || '–';
+        const dimStr = `${fmtDim(item.stl)}x${fmtDim(item.stw)}`;
+        return `${item.desc || ''} ${item.filename || ''} ${item.cabNr || ''} ${item.cabDesc || ''} ${dimStr} ${brd}`.toLowerCase().includes(q);
+    });
+
+    wrap.innerHTML = `
+        <div class="stat-chip done-chip${done === 0 ? ' disabled' : ''}${isOpen ? ' open' : ''}" id="done-stat-chip">
+            <span class="stat-val done-chip-val">
+                <span>${done}</span>
+                ${done > 0 ? '<span class="material-symbols-rounded">expand_more</span>' : ''}
+            </span>
+            <span class="stat-lbl">${t('cut.stat.done')}</span>
+        </div>
+        <div class="done-dropdown-menu${isOpen ? ' open' : ''}" id="done-dropdown-menu">
+            <div class="done-dd-header">
+                <span class="done-dd-title">${t('cut.list.done_section', { done })}</span>
+                <button type="button" id="cl-restore-all" class="cl-restore-all-btn" title="${t('cut.list.restore_all')}">
+                    <span class="material-symbols-rounded">restart_alt</span>
+                    <span>${t('cut.list.restore_all')}</span>
+                </button>
+            </div>
+            <div class="done-dd-search-wrap">
+                <span class="material-symbols-rounded">search</span>
+                <input type="text" id="done-dd-search" class="done-dd-search-input" placeholder="${esc(t('cut.list.done_search'))}" value="${esc(_st.doneSearchQuery || '')}" autocomplete="off" />
+                <button type="button" id="done-dd-search-clear" class="done-dd-search-clear" style="display:${q ? ' inline-flex' : 'none'}">
+                    <span class="material-symbols-rounded">close</span>
+                </button>
+            </div>
+            <div class="done-dd-body" id="done-dd-body">
+                <table class="cl-table">
+                    <thead><tr><th></th><th></th><th>${t('cut.list.col.desc')}</th><th>${t('cut.list.col.mm')}</th><th>${t('cut.list.col.brd')}</th></tr></thead>
+                    <tbody id="done-dd-tbody">
+                        ${doneRowsHtml}
+                        <tr id="done-dd-no-match" style="${anyMatch ? 'display:none;' : ''}"><td colspan="5" class="cl-empty-row">${t('cut.list.done_no_match')}</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>`;
+
+    const ddBody = document.getElementById('done-dd-body');
+    if (ddBody && prevDdScroll > 0) ddBody.scrollTop = prevDdScroll;
+
+    const searchInput = wrap.querySelector('#done-dd-search');
+    const clearBtn = wrap.querySelector('#done-dd-search-clear');
+    const noMatchRow = wrap.querySelector('#done-dd-no-match');
+
+    function applyDoneFilter(val) {
+        _st.doneSearchQuery = val;
+        const term = val.trim().toLowerCase();
+        if (clearBtn) clearBtn.style.display = term ? 'inline-flex' : 'none';
+        let visibleCount = 0;
+        wrap.querySelectorAll('.cut-row.done-row').forEach(r => {
+            const hay = r.dataset.search || '';
+            const show = !term || hay.includes(term);
+            r.style.display = show ? '' : 'none';
+            if (show) visibleCount++;
+        });
+        if (noMatchRow) noMatchRow.style.display = visibleCount === 0 ? '' : 'none';
+    }
+
+    searchInput?.addEventListener('input', (e) => {
+        applyDoneFilter(e.target.value);
+    });
+
+    clearBtn?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (searchInput) {
+            searchInput.value = '';
+            applyDoneFilter('');
+            searchInput.focus();
+        }
+    });
+
+    if (wasSearchFocused && searchInput && isOpen) {
+        searchInput.focus();
+        const len = searchInput.value.length;
+        searchInput.setSelectionRange(len, len);
+    }
+
+    wrap.querySelector('#done-stat-chip')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (done === 0) return;
+        _st.doneDropdownOpen = !_st.doneDropdownOpen;
+        wrap.querySelector('#done-stat-chip')?.classList.toggle('open', _st.doneDropdownOpen);
+        wrap.querySelector('#done-dropdown-menu')?.classList.toggle('open', _st.doneDropdownOpen);
+    });
+
+    wrap.querySelector('#done-dropdown-menu')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+    });
+
+    wrap.querySelector('#cl-restore-all')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        _st.doneIds.clear();
+        _st.selected.clear();
+        _st.doneDropdownOpen = false;
+        lsCutSave(_st.lastMatRef, _st.doneIds);
+        buildCutList(_st.lastBoardMap);
+        refreshCLHeader();
+    });
+
+    wrap.querySelectorAll('.done-dd-cb').forEach(cb => {
+        cb.addEventListener('change', (e) => {
+            const id = e.target.dataset.id;
+            if (!e.target.checked && id) {
+                _st.doneIds.delete(id);
+                _st.selected.delete(id);
+                lsCutSave(_st.lastMatRef, _st.doneIds);
+                buildCutList(_st.lastBoardMap);
+                refreshCLHeader();
+            }
+        });
+    });
+
+    wrap.querySelectorAll('.cut-row.done-row').forEach(row => {
+        row.addEventListener('click', (e) => {
+            if (e.target.type === 'checkbox') return;
+            const id = row.dataset.partId;
+            if (id) {
+                _st.doneIds.delete(id);
+                _st.selected.delete(id);
+                lsCutSave(_st.lastMatRef, _st.doneIds);
+                buildCutList(_st.lastBoardMap);
+                refreshCLHeader();
+            }
+        });
+    });
 }
 
 function refreshCLHeader() {
@@ -501,6 +771,7 @@ function refreshCLHeader() {
     const tEl=document.getElementById('cl-prog-text'); if(tEl) tEl.textContent=t('cut.list.done',{done,total});
     const b=document.getElementById('cl-prog-bar'); if(b) b.style.width=`${pct}%`;
     const r=document.getElementById('reopt-btn'); if(r){ r.disabled=rem===0; r.innerHTML=`<span class="material-symbols-rounded">refresh</span> ${t('cut.list.reopt',{rem})}`; }
+    renderDoneDropdown();
 }
 
 // ── SVG click → highlight table row ──────────────────────────────────────────
@@ -538,7 +809,7 @@ function optimize() {
 
     // Reset done state when material changes (and clear its localStorage key)
     if(matRef!==_st.lastMatRef){
-        if(_st.lastMatRef !== null) lsCutClear(_st.lastMatRef); // only clear the OLD material's key
+        // Preserve cut progress per material in localStorage when switching materials
         _st.doneIds = lsCutLoad(matRef); // load saved state for the new material
         _st.lastMatRef=matRef;
     }
@@ -557,8 +828,17 @@ function runOptimization() {
     const active = _st.allItems.filter(i => !_st.doneIds.has(i.id));
 
     if (!active.length) {
-        document.getElementById('cutting-output').innerHTML =
-            `<div class="output-empty"><span class="material-symbols-rounded">check_circle</span><p>${t('cut.allcut')}</p></div>`;
+        const wasteZero = window.AVL_UNITS ? window.AVL_UNITS.formatAreaFromM2(0) : '0.000 m²';
+        document.getElementById('cutting-output').innerHTML = `
+            <div class="cut-stats-bar">
+                <div class="stat-chip"><span class="stat-val">0</span><span class="stat-lbl">${t('cut.stat.boards')}</span></div>
+                <div class="stat-chip"><span class="stat-val">0</span><span class="stat-lbl">${t('cut.stat.placed')}</span></div>
+                <div class="stat-chip eff-chip"><span class="stat-val">0.0%</span><span class="stat-lbl">${t('cut.stat.efficiency')}</span></div>
+                <div class="stat-chip"><span class="stat-val">${wasteZero}</span><span class="stat-lbl">${t('cut.stat.waste')}</span></div>
+                <div class="done-stat-wrap" id="done-stat-wrap"></div>
+            </div>
+            <div class="output-empty"><span class="material-symbols-rounded">check_circle</span><p>${t('cut.allcut')}</p></div>`;
+        buildCutList(_st.lastBoardMap || {});
         refreshCLHeader();
         return;
     }
@@ -634,8 +914,10 @@ function renderOutput(boards, W, H, padL, padR, padT, padB, allItems, unplaceabl
         <div class="stat-chip"><span class="stat-val">${boards.length}</span><span class="stat-lbl">${t('cut.stat.boards')}</span></div>
         <div class="stat-chip"><span class="stat-val">${allItems.length - unplaceable.length}</span><span class="stat-lbl">${t('cut.stat.placed')}</span></div>
         <div class="stat-chip eff-chip"><span class="stat-val">${eff}%</span><span class="stat-lbl">${t('cut.stat.efficiency')}</span></div>
-        <div class="stat-chip"><span class="stat-val">${wasteFormatted}</span><span class="stat-lbl">${t('cut.stat.waste')}</span></div>`;
+        <div class="stat-chip"><span class="stat-val">${wasteFormatted}</span><span class="stat-lbl">${t('cut.stat.waste')}</span></div>
+        <div class="done-stat-wrap" id="done-stat-wrap"></div>`;
     output.appendChild(stats);
+    renderDoneDropdown();
 
     if (unplaceable.length) {
         const w = document.createElement('div'); w.className = 'cut-warning';
@@ -840,7 +1122,148 @@ function updateCuttingUnitLabels() {
     _st.lastUnitFormat = currentFmt;
 }
 
+
+function ensureCuttingDoneStyles() {
+    if (document.getElementById('avl-cutting-done-styles')) return;
+    const st = document.createElement('style');
+    st.id = 'avl-cutting-done-styles';
+    st.textContent = `
+        .cl-pending-header td {
+            padding: 6px 8px 4px;
+            font-weight: 700;
+            font-size: 0.74rem;
+            color: #F59E0B;
+            background: rgba(245, 158, 11, 0.1);
+            border-top: 1px solid rgba(245, 158, 11, 0.3);
+            border-bottom: 1px dashed rgba(245, 158, 11, 0.3);
+        }
+        .cl-pending-header td .material-symbols-rounded { font-size: 14px; vertical-align: middle; margin-right: 4px; }
+        .done-stat-wrap { position: relative; display: flex; }
+        .stat-chip.done-chip {
+            cursor: pointer;
+            user-select: none;
+            transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+            min-width: 110px;
+        }
+        .stat-chip.done-chip:hover:not(.disabled) {
+            border-color: var(--color-active-primary);
+            background: var(--color-hover-secondary);
+        }
+        .stat-chip.done-chip.open {
+            border-color: var(--color-active-primary);
+            box-shadow: 0 0 0 2px rgba(0,153,217,0.15);
+        }
+        .stat-chip.done-chip.disabled { opacity: 0.55; cursor: default; }
+        .done-chip-val { display: inline-flex; align-items: center; gap: 2px; }
+        .done-chip-val .material-symbols-rounded {
+            font-size: 18px;
+            color: var(--color-active-primary);
+            transition: transform 0.15s;
+            margin-right: -4px;
+        }
+        .stat-chip.done-chip.open .done-chip-val .material-symbols-rounded { transform: rotate(180deg); }
+        .done-dropdown-menu {
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0;
+            z-index: 500;
+            width: 420px;
+            max-height: 360px;
+            display: none;
+            flex-direction: column;
+            background: var(--color-bg-sidebar);
+            border: 1px solid var(--color-border-hr);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.22);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .done-dropdown-menu.open { display: flex; }
+        .done-dd-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 8px 12px;
+            background: var(--color-bg-secondary);
+            border-bottom: 1px solid var(--color-border-hr);
+            flex-shrink: 0;
+        }
+        .done-dd-title {
+            font-size: 0.76rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--color-text-secondary);
+        }
+        .done-dd-search-wrap {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            background: var(--color-bg-primary);
+            border-bottom: 1px solid var(--color-bg-secondary);
+            flex-shrink: 0;
+        }
+        .done-dd-search-wrap .material-symbols-rounded {
+            font-size: 16px;
+            color: var(--color-text-placeholder);
+            flex-shrink: 0;
+        }
+        .done-dd-search-input {
+            flex: 1;
+            border: none;
+            background: transparent;
+            color: var(--color-text-primary);
+            font-family: inherit;
+            font-size: 0.8rem;
+            outline: none;
+            min-width: 0;
+        }
+        .done-dd-search-input::placeholder { color: var(--color-text-placeholder); }
+        .done-dd-search-clear {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: none;
+            border: none;
+            padding: 2px;
+            cursor: pointer;
+            color: var(--color-text-placeholder);
+            border-radius: 2px;
+        }
+        .done-dd-search-clear:hover {
+            color: var(--color-text-primary);
+            background: var(--color-hover-secondary);
+        }
+        .done-dd-search-clear .material-symbols-rounded { font-size: 14px; }
+        .done-dd-body { flex: 1; overflow-y: auto; max-height: 290px; }
+        .cl-restore-all-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            padding: 2px 7px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            font-family: inherit;
+            color: var(--color-active-primary);
+            background: var(--color-bg-primary);
+            border: 1px solid var(--color-active-primary);
+            border-radius: 2px;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+        }
+        .cl-restore-all-btn:hover { background: var(--color-active-primary); color: #fff; }
+        .cl-restore-all-btn .material-symbols-rounded { font-size: 13px; }
+        .cut-row.done-row { opacity: 0.62; background: rgba(16, 185, 129, 0.04); }
+        .cut-row.done-row:hover { opacity: 0.95; background: var(--color-hover-secondary); }
+        .cut-row.done-row .cut-dname { text-decoration: line-through; color: var(--color-text-secondary); }
+        .cut-row.done-row.selected { opacity: 1; }
+    `;
+    document.head.appendChild(st);
+}
+
 document.addEventListener('DOMContentLoaded',()=>{
+    ensureCuttingDoneStyles();
     // Restore cut-done state from embedded file snapshot (if tabledata.js was saved)
     if (window.AVL_SAVE) window.AVL_SAVE.restoreAll();
 
@@ -861,6 +1284,13 @@ document.addEventListener('DOMContentLoaded',()=>{
     [lI,wI].forEach(e=>e?.addEventListener('input',()=>{ preset.value='custom'; }));
     document.querySelectorAll('.grain-btn').forEach(b=>b.addEventListener('click',()=>{ document.querySelectorAll('.grain-btn').forEach(x=>x.classList.remove('active')); b.classList.add('active'); }));
     document.getElementById('optimize-btn')?.addEventListener('click', optimize);
+    document.addEventListener('click', (e) => {
+        if (_st.doneDropdownOpen && !e.target.closest('#done-stat-wrap')) {
+            _st.doneDropdownOpen = false;
+            document.getElementById('done-stat-chip')?.classList.remove('open');
+            document.getElementById('done-dropdown-menu')?.classList.remove('open');
+        }
+    });
 
     // Re-render dynamic content when language or unit changes
     window.addEventListener('avl:langChanged', () => {
